@@ -1,0 +1,26 @@
+{
+  "starter_apartment": {
+    "time": 300,
+    "spawn": [1.0, 2.5],
+    "house": {
+      "min": [-8.0, -5.0], "max": [4.0, 5.0],
+      "wall_height": 2.6, "wall_thickness": 0.2,
+      "interior_wall_x": -2.0, "interior_door_z": -1.5, "interior_door_width": 1.15,
+      "front_door_x": 1.0, "front_door_width": 1.5, "door_height": 2.15
+    },
+    "truck": {"center_x": 1.0, "rear_z": 10.5, "length": 5.0, "width": 2.6, "bed_height": 0.9, "ramp_length": 2.6, "ramp_width": 1.8},
+    "items": [
+      {"id": "sofa", "pos": [-5.0, 3.9], "yaw": 0},
+      {"id": "tv", "pos": [-5.0, -4.3], "yaw": 0},
+      {"id": "lamp", "pos": [-7.3, -4.3], "yaw": 0},
+      {"id": "plant", "pos": [-7.3, 4.2], "yaw": 0},
+      {"id": "box_books", "pos": [-3.0, -4.2], "yaw": 20},
+      {"id": "chair", "pos": [-4.6, 0.6], "yaw": 160},
+      {"id": "box_small", "pos": [2.9, -3.8], "yaw": 10},
+      {"id": "box_small", "pos": [3.3, -3.1], "yaw": -15},
+      {"id": "box_large", "pos": [0.3, -4.1], "yaw": 5},
+      {"id": "plant", "pos": [3.3, 4.2], "yaw": 0},
+      {"id": "chair", "pos": [-0.8, 3.6], "yaw": 200}
+    ]
+  }
+}

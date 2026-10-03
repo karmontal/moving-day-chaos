@@ -1,0 +1,58 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Moving Day Chaos"
+config/description="A physics co-op party game about moving furniture very, very badly."
+config/version="0.1.0"
+run/main_scene="res://scenes/main_menu.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+boot_splash/bg_color=Color(0.75, 0.9, 1, 1)
+
+[autoload]
+
+Settings="*res://scripts/autoload/settings.gd"
+Localization="*res://scripts/autoload/localization.gd"
+AudioManager="*res://scripts/autoload/audio_manager.gd"
+PlatformServices="*res://scripts/autoload/platform_services.gd"
+Data="*res://scripts/autoload/data.gd"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[gui]
+
+theme/custom_font="res://assets/fonts/Cairo.ttf"
+
+[layer_names]
+
+3d_physics/layer_1="world"
+3d_physics/layer_2="furniture"
+3d_physics/layer_3="movers"
+3d_physics/layer_4="hands"
+
+[physics]
+
+3d/physics_engine="Jolt Physics"
+common/physics_ticks_per_second=60
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.75, 0.9, 1, 1)
+anti_aliasing/quality/msaa_3d=2

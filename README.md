@@ -1,7 +1,8 @@
 # Moving Day Chaos 🛋️📦
 
-> **الحالة: مرحلة ما قبل الإنتاج (Pre-production)** — المستودع فيه الوصف والتوثيق والصور المبدئية فقط. ما فيه كود بعد.
-> **Status: pre-production** — design docs and concept art only. No game code yet.
+> **الحالة: المرحلة 1 — النموذج الأولي للفيزياء (لاعب واحد).** شخصية بيدين فيزيائيتين، مسك/حمل/لف العفش، قطع هشة تنكسر،
+> بيت من غرفتين وشاحنة، مؤقت ونجوم. السؤال اللي نختبره: **هل حمل العفش ممتع ومضحك؟**
+> **Status: Phase 1 — single-player physics prototype** (Godot 4.7 + Jolt). See "Play the prototype" below.
 
 ## الفكرة باختصار
 لعبة جماعية فوضوية بفيزياء مضحكة لـ 1–4 لاعبين أونلاين على Steam: أنت وأصحابك عمّال شركة نقل عفش، لازم تنقلون أثاث بيت كامل للشاحنة قبل ما يخلص الوقت… والكنبة ما تبغى تطلع من الباب، والتلفزيون على وشك يطيح.
@@ -20,6 +21,31 @@ friends' "help".
 | **السعر / Price** | $5.99 + 4-pack "Moving Crew" bundle |
 | **مدة التطوير / Scope** | MVP ~8–10 weeks, Early Access ~4–6 months |
 
+## جرّب النموذج / Play the prototype
+افتح المجلد في Godot 4.7 واضغط Play (أو `godot --path .`).
+
+| التحكم | Keyboard + mouse | Gamepad |
+|---|---|---|
+| حركة / Move | WASD | Left stick |
+| توجيه الأيدي والكاميرا / Aim arms + camera (انظر لتحت عشان توصل للأرض) | Mouse | Right stick |
+| مسك يد يسرى / يمنى — Grab left / right (hold) | LMB / RMB | LT / RT |
+| مسك بالاثنتين / Grab both | F | — |
+| لف القطعة / Spin held item | Q / E | LB / RB |
+| قفز / Jump | Space | A |
+| إيقاف / Pause | Esc | Start |
+
+- كل يد لها قوة محدودة: الكنبة (70 كغ) تحتاج **لاعبين**؛ لما تلعب لوحدك يديك أقوى ×1.75 (`data/game.json` → `solo_strength`).
+- القطع الهشة (التلفزيون، الأباجورة، النبتة) تنكسر من أول ضربة قوية؛ الكراتين والكراسي "تنبعج" وتقل قيمتها.
+- القطعة تنحسب محمّلة لما تستقر داخل الشاحنة (المنطقة الصفراء). الكنبة ما تطلع من الباب الأمامي إلا إذا لفّيتها.
+
+| | |
+|---|---|
+| ![Overview](docs/screenshots/01_overview.jpg) | ![Carrying](docs/screenshots/02_carry.jpg) |
+| ![Sofa](docs/screenshots/03_sofa.jpg) | ![Results](docs/screenshots/04_results_ar.jpg) |
+
+**الاختبارات / Tests:** `godot --headless --path . res://tests/test_runner.tscn`
+**الصور / Screenshots:** `xvfb-run -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 res://tools/screenshot.tscn -- mission out.png`
+
 ## التوثيق / Documentation
 | الملف | المحتوى |
 |---|---|
@@ -33,7 +59,7 @@ friends' "help".
 ## الصور المبدئية / Concept art
 | | |
 |---|---|
-| ![Key art](concept/01_key_art.png) | ![Characters](concept/06_characters_revised.png) |
+| ![Key art](concept/07_key_art_revised.png) | ![Characters](concept/06_characters_revised.png) |
 | ![Gameplay mockup](concept/03_gameplay_mockup.png) | ![Truck scene](concept/04_truck_scene.png) |
 
 ![Props](concept/05_props.png)

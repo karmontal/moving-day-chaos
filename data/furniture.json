@@ -1,0 +1,67 @@
+{
+  "box_small": {
+    "mass": 6.0, "value": 20, "fragile": false,
+    "parts": [
+      {"shape": "box", "size": [0.46, 0.42, 0.46], "pos": [0, 0, 0], "color": "c8935a"},
+      {"shape": "box", "size": [0.12, 0.425, 0.465], "pos": [0, 0.001, 0], "color": "e8d6a8", "visual": true}
+    ]
+  },
+  "box_large": {
+    "mass": 14.0, "value": 30, "fragile": false,
+    "parts": [
+      {"shape": "box", "size": [0.75, 0.6, 0.6], "pos": [0, 0, 0], "color": "b98450"},
+      {"shape": "box", "size": [0.14, 0.605, 0.605], "pos": [0, 0.001, 0], "color": "e8d6a8", "visual": true}
+    ]
+  },
+  "box_books": {
+    "mass": 24.0, "value": 25, "fragile": false,
+    "parts": [
+      {"shape": "box", "size": [0.48, 0.4, 0.4], "pos": [0, 0, 0], "color": "a87b4e"},
+      {"shape": "box", "size": [0.485, 0.1, 0.405], "pos": [0, 0.08, 0], "color": "d94f4f", "visual": true}
+    ]
+  },
+  "lamp": {
+    "mass": 4.0, "value": 40, "fragile": true, "toughness": 3.6,
+    "parts": [
+      {"shape": "cylinder", "radius": 0.18, "height": 0.06, "pos": [0, -0.62, 0], "color": "3a2a20"},
+      {"shape": "cylinder", "radius": 0.025, "height": 1.15, "pos": [0, -0.03, 0], "color": "3a2a20"},
+      {"shape": "cone", "radius": 0.26, "top_radius": 0.14, "height": 0.32, "pos": [0, 0.52, 0], "color": "ffd27a"}
+    ]
+  },
+  "tv": {
+    "mass": 12.0, "value": 120, "fragile": true, "toughness": 4.2,
+    "parts": [
+      {"shape": "box", "size": [1.1, 0.64, 0.09], "pos": [0, 0.1, 0], "color": "2b2d38"},
+      {"shape": "box", "size": [1.0, 0.54, 0.01], "pos": [0, 0.1, 0.046], "color": "5b8fd9", "visual": true},
+      {"shape": "box", "size": [0.12, 0.2, 0.08], "pos": [0, -0.3, 0], "color": "2b2d38"},
+      {"shape": "box", "size": [0.42, 0.04, 0.26], "pos": [0, -0.41, 0], "color": "2b2d38"}
+    ]
+  },
+  "plant": {
+    "mass": 9.0, "value": 35, "fragile": true, "toughness": 4.6,
+    "parts": [
+      {"shape": "cylinder", "radius": 0.2, "height": 0.36, "pos": [0, -0.22, 0], "color": "d9774a"},
+      {"shape": "sphere", "radius": 0.33, "pos": [0, 0.24, 0], "color": "4caf6a"}
+    ]
+  },
+  "chair": {
+    "mass": 7.0, "value": 30, "fragile": false,
+    "parts": [
+      {"shape": "box", "size": [0.5, 0.08, 0.5], "pos": [0, 0.0, 0], "color": "e5b022"},
+      {"shape": "box", "size": [0.5, 0.52, 0.07], "pos": [0, 0.3, -0.215], "color": "e5b022"},
+      {"shape": "box", "size": [0.06, 0.44, 0.06], "pos": [0.2, -0.26, 0.2], "color": "8a5a36"},
+      {"shape": "box", "size": [0.06, 0.44, 0.06], "pos": [-0.2, -0.26, 0.2], "color": "8a5a36"},
+      {"shape": "box", "size": [0.06, 0.44, 0.06], "pos": [0.2, -0.26, -0.2], "color": "8a5a36"},
+      {"shape": "box", "size": [0.06, 0.44, 0.06], "pos": [-0.2, -0.26, -0.2], "color": "8a5a36"}
+    ]
+  },
+  "sofa": {
+    "mass": 70.0, "value": 200, "fragile": false, "heavy": true,
+    "parts": [
+      {"shape": "box", "size": [2.0, 0.42, 0.9], "pos": [0, -0.2, 0], "color": "ff8fab"},
+      {"shape": "box", "size": [2.0, 0.5, 0.22], "pos": [0, 0.26, -0.34], "color": "ff8fab"},
+      {"shape": "box", "size": [0.22, 0.26, 0.9], "pos": [0.89, 0.13, 0], "color": "f27396"},
+      {"shape": "box", "size": [0.22, 0.26, 0.9], "pos": [-0.89, 0.13, 0], "color": "f27396"}
+    ]
+  }
+}
