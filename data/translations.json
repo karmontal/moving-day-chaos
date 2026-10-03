@@ -334,5 +334,165 @@
   "NET_ONLINE_FAILED": {
     "en": "Could not reach the online server (%s).",
     "ar": "ما قدرنا نوصل لسيرفر الأونلاين (%s)."
+  },
+  "ITEM_FRIDGE": {
+    "en": "Fridge",
+    "ar": "ثلاجة"
+  },
+  "ITEM_BOOKSHELF": {
+    "en": "Bookshelf",
+    "ar": "مكتبة"
+  },
+  "ITEM_BED": {
+    "en": "Bed",
+    "ar": "سرير"
+  },
+  "ITEM_DESK": {
+    "en": "Desk",
+    "ar": "مكتب"
+  },
+  "ITEM_MONITOR": {
+    "en": "Computer screen",
+    "ar": "شاشة كمبيوتر"
+  },
+  "ITEM_VASE": {
+    "en": "Grandma's vase",
+    "ar": "مزهرية الجدة"
+  },
+  "ITEM_FISHBOWL": {
+    "en": "Fishbowl (with fish!)",
+    "ar": "حوض سمك صغير (فيه سمكة!)"
+  },
+  "ITEM_AQUARIUM": {
+    "en": "Big aquarium",
+    "ar": "أكواريوم كبير"
+  },
+  "ITEM_PIANO": {
+    "en": "Piano",
+    "ar": "بيانو"
+  },
+  "ITEM_GUITAR": {
+    "en": "Guitar",
+    "ar": "جيتار"
+  },
+  "ITEM_WASHER": {
+    "en": "Washing machine",
+    "ar": "غسالة"
+  },
+  "ITEM_WARDROBE": {
+    "en": "Wardrobe",
+    "ar": "خزانة"
+  },
+  "ITEM_WATER_COOLER": {
+    "en": "Water cooler",
+    "ar": "كولر ماء"
+  },
+  "ITEM_ARMCHAIR": {
+    "en": "Armchair",
+    "ar": "كنبة مفردة"
+  },
+  "LVL_STARTER": {
+    "en": "Starter Apartment",
+    "ar": "الشقة الأولى"
+  },
+  "LVL_STARTER_DESC": {
+    "en": "Two rooms, one very pink sofa.",
+    "ar": "غرفتين وكنبة وردية جداً."
+  },
+  "LVL_STUDIO": {
+    "en": "Tiny Studio",
+    "ar": "الاستوديو الصغير"
+  },
+  "LVL_STUDIO_DESC": {
+    "en": "A warm-up: small place, few boxes.",
+    "ar": "تحمية: مكان صغير وكراتين قليلة."
+  },
+  "LVL_DORM": {
+    "en": "Student Dorm",
+    "ar": "سكن الطلاب"
+  },
+  "LVL_DORM_DESC": {
+    "en": "A corridor, three rooms and SO many books.",
+    "ar": "ممر وثلاث غرف وكتب كثير كثير."
+  },
+  "LVL_GRANDMA": {
+    "en": "Grandma's House",
+    "ar": "بيت الجدة"
+  },
+  "LVL_GRANDMA_DESC": {
+    "en": "Everything here is fragile. Everything.",
+    "ar": "كل شي هون قابل للكسر. كل شي."
+  },
+  "LVL_FAMILY": {
+    "en": "Family Home",
+    "ar": "بيت العيلة"
+  },
+  "LVL_FAMILY_DESC": {
+    "en": "Fridge, washer, sofa, bed — the big stuff.",
+    "ar": "ثلاجة وغسالة وكنبة وسرير — الأشياء الكبيرة."
+  },
+  "LVL_OFFICE": {
+    "en": "Office Move",
+    "ar": "نقل المكتب"
+  },
+  "LVL_OFFICE_DESC": {
+    "en": "Desks, screens and a water cooler.",
+    "ar": "مكاتب وشاشات وكولر ماء."
+  },
+  "LVL_CABIN": {
+    "en": "Winter Cabin",
+    "ar": "كوخ الشتاء"
+  },
+  "LVL_CABIN_DESC": {
+    "en": "The yard is pure ice. Good luck.",
+    "ar": "الساحة كلها جليد. بالتوفيق."
+  },
+  "LVL_TOWNHOUSE": {
+    "en": "Narrow Townhouse",
+    "ar": "البيت الضيق"
+  },
+  "LVL_TOWNHOUSE_DESC": {
+    "en": "Tiny doors, a fridge and a sofa. Pivot!",
+    "ar": "أبواب ضيقة وثلاجة وكنبة. لف لف!"
+  },
+  "LVL_MUSIC": {
+    "en": "Music Shop",
+    "ar": "محل الموسيقى"
+  },
+  "LVL_MUSIC_DESC": {
+    "en": "One piano. Several guitars. No pressure.",
+    "ar": "بيانو واحد وكم جيتار. بدون ضغط."
+  },
+  "LVL_AQUARIUM": {
+    "en": "The Aquarium Job",
+    "ar": "مهمة الأكواريوم"
+  },
+  "LVL_AQUARIUM_DESC": {
+    "en": "The fish are counting on you.",
+    "ar": "السمك معتمد عليك."
+  },
+  "LVL_MANSION": {
+    "en": "The Mansion",
+    "ar": "القصر"
+  },
+  "LVL_MANSION_DESC": {
+    "en": "Huge house, huge truck, tiny time.",
+    "ar": "بيت ضخم وشاحنة ضخمة ووقت قليل."
+  },
+  "LEVELS_TITLE": {
+    "en": "Pick a job",
+    "ar": "اختر مهمة"
+  },
+  "LEVEL_INFO": {
+    "en": "%d items · %d:%02d",
+    "ar": "%d قطعة · %d:%02d"
+  },
+  "BTN_NEXT": {
+    "en": "Next job",
+    "ar": "المهمة التالية"
+  },
+  "LOBBY_LEVEL": {
+    "en": "Job:",
+    "ar": "المهمة:"
   }
 }

@@ -7,6 +7,7 @@ const BG := preload("res://assets/art/menu_bg.jpg")
 func _ready() -> void:
 	theme = UITheme.build()
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	AudioManager.play_music("menu")
 	var bg := TextureRect.new()
 	bg.texture = BG
 	bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE

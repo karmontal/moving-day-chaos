@@ -26,6 +26,12 @@ var _look_index := -1
 var _look_last := Vector2.ZERO
 var _pressed := {}  # touch index -> button id
 var _buttons: Array[Dictionary] = []
+var _icons := {}
+
+const BUTTON_COLORS := {
+	"both": Color("f26b4e"), "left": Color("2a8c99"), "right": Color("2a8c99"),
+	"jump": Color("e5b022"), "rot_l": Color("a98bdb"), "rot_r": Color("a98bdb"), "pause": Color("fff4e0"),
+}
 
 
 ## True on phones/tablets; Engine meta "force_touch" lets desktop screenshots show the layout.
@@ -141,57 +147,88 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	var font := UITheme.FONT
-	if _stick_index != -1:
-		draw_circle(_stick_origin, STICK_RADIUS, Color(1, 1, 1, 0.16))
-		draw_arc(_stick_origin, STICK_RADIUS, 0.0, TAU, 48, Color(Palette.CHOCOLATE, 0.4), 4.0, true)
-		draw_circle(_stick_knob, 50.0, Color(Palette.ACCENT, 0.8))
-	else:
-		# Ghost stick so first-time players know where to put their thumb.
-		var ghost := Vector2(260, get_viewport_rect().size.y - 260)
-		draw_arc(ghost, STICK_RADIUS, 0.0, TAU, 48, Color(Palette.CREAM, 0.35), 4.0, true)
-		draw_circle(ghost, 50.0, Color(Palette.CREAM, 0.25))
+	# Move stick: a chunky ring with a coral knob (ghosted until touched).
+	var ghost := _stick_index == -1
+	var base := Vector2(260, get_viewport_rect().size.y - 260) if ghost else _stick_origin
+	var knob := base if ghost else _stick_knob
+	var a := 0.45 if ghost else 0.9
+	draw_circle(base + Vector2(0, 8), STICK_RADIUS, Color(0, 0, 0, 0.18 * a))
+	draw_circle(base, STICK_RADIUS, Color(Palette.CREAM, 0.35 * a))
+	draw_arc(base, STICK_RADIUS, 0.0, TAU, 64, Color(Palette.CHOCOLATE, 0.8 * a), 6.0, true)
+	_sticker(knob, 52.0, Color(Palette.PLAYER_COLORS[0], a), false, a)
 	for b in _buttons:
-		var active := _pressed.values().has(b.id)
-		var fill := Color(Palette.CREAM, 0.30)
-		match String(b.id):
-			"both":
-				active = active or (grab[0] and grab[1])
-				if holding[0] and holding[1]:
-					fill = Color(Palette.HIVIS, 0.85)
-			"left":
-				active = active or grab[0]
-				if holding[0]:
-					fill = Color(Palette.HIVIS, 0.85)
-			"right":
-				active = active or grab[1]
-				if holding[1]:
-					fill = Color(Palette.HIVIS, 0.85)
-		if active and fill.a < 0.5:
-			fill = Color(Palette.CREAM, 0.75)
+		var id := String(b.id)
+		var pressed := _pressed.values().has(id)
 		var r: float = b.r
-		draw_circle(b.pos, r, fill)
-		draw_arc(b.pos, r, 0.0, TAU, 48, Color(Palette.CHOCOLATE, 0.7), 5.0, true)
-		var ink := Palette.CHOCOLATE
-		match String(b.id):
-			"rot_l", "rot_r":
-				_draw_spin_arrow(b.pos, r * 0.5, 1.0 if b.id == "rot_l" else -1.0, ink)
+		var color: Color = BUTTON_COLORS.get(id, Palette.CREAM)
+		var hand := -1
+		match id:
+			"both":
+				pressed = pressed or (grab[0] and grab[1])
+			"left":
+				hand = 0
+				pressed = pressed or grab[0]
+			"right":
+				hand = 1
+				pressed = pressed or grab[1]
+		var holding_now := (hand >= 0 and holding[hand]) or (id == "both" and holding[0] and holding[1])
+		var c := _sticker(b.pos, r, color, pressed, 1.0, holding_now)
+		match id:
+			"both", "left", "right":
+				var tex := _icon("glove_fist" if holding_now or pressed else "glove_open")
+				_draw_icon(tex, c, r * (1.25 if id == "both" else 1.15), id == "left")
+				if id != "both":
+					_badge(c + Vector2(r * 0.62, -r * 0.62), tr(b.label), font)
+			"jump":
+				_draw_icon(_icon("boot"), c, r * 1.25, false)
+			"rot_l":
+				_draw_icon(_icon("rotate_ccw"), c, r * 1.2, false)
+			"rot_r":
+				_draw_icon(_icon("rotate_cw"), c, r * 1.2, false)
 			"pause":
-				draw_rect(Rect2(b.pos + Vector2(-14, -18), Vector2(9, 36)), ink)
-				draw_rect(Rect2(b.pos + Vector2(5, -18), Vector2(9, 36)), ink)
-			_:
-				var text := tr(b.label)
-				var size := 40 if r > 100.0 else 32
-				var w := font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-				draw_string(font, b.pos + Vector2(-w * 0.5, size * 0.35), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, ink)
+				draw_rect(Rect2(c + Vector2(-15, -18), Vector2(10, 36)), Palette.CHOCOLATE)
+				draw_rect(Rect2(c + Vector2(5, -18), Vector2(10, 36)), Palette.CHOCOLATE)
 
 
-## A curved arrow: counter-clockwise when dir > 0.
-func _draw_spin_arrow(c: Vector2, r: float, dir: float, ink: Color) -> void:
-	var a0 := -PI * 0.9
-	var a1 := PI * 0.4
-	draw_arc(c, r, a0, a1, 24, ink, 6.0, true)
-	var tip_angle := a1 if dir < 0.0 else a0
-	var tip := c + Vector2(cos(tip_angle), sin(tip_angle)) * r
-	var tangent := Vector2(-sin(tip_angle), cos(tip_angle)) * (1.0 if dir < 0.0 else -1.0)
-	var normal := Vector2(cos(tip_angle), sin(tip_angle))
-	draw_colored_polygon(PackedVector2Array([tip + tangent * 16.0, tip - normal * 12.0, tip + normal * 12.0]), ink)
+## A raised cartoon button: drop shadow, outline, top highlight; sinks when pressed.
+## Returns the face centre (moved down while pressed).
+func _sticker(pos: Vector2, r: float, color: Color, pressed: bool, alpha := 1.0, glow := false) -> Vector2:
+	var depth := 3.0 if pressed else 9.0
+	var face := pos + Vector2(0, 9.0 - depth)
+	draw_circle(pos + Vector2(0, 9), r, Color(Palette.CHOCOLATE, 0.55 * alpha))
+	if glow:
+		draw_circle(face, r + 10.0, Color(Palette.HIVIS, 0.75 * alpha))
+	draw_circle(face, r, color.darkened(0.12) if pressed else color)
+	draw_circle(face + Vector2(0, -r * 0.18), r * 0.78, Color(color.lightened(0.28), 0.55 * alpha))
+	draw_circle(face, r * 0.7, Color(color.darkened(0.12) if pressed else color, 1.0))
+	draw_arc(face, r, 0.0, TAU, 64, Color(Palette.CHOCOLATE, alpha), 6.0, true)
+	draw_arc(face, r * 0.86, -PI * 0.85, -PI * 0.35, 16, Color(1, 1, 1, 0.55 * alpha), 5.0, true)
+	return face
+
+
+func _badge(pos: Vector2, text: String, font: Font) -> void:
+	var size := 26
+	var w := maxf(font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x + 18.0, 40.0)
+	var rect := Rect2(pos - Vector2(w * 0.5, 20), Vector2(w, 40))
+	draw_style_box(UITheme.box(Palette.CREAM, 20, 4), rect)
+	draw_string(font, Vector2(rect.position.x + (w - font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x) * 0.5, pos.y + 9), text, HORIZONTAL_ALIGNMENT_LEFT, -1, size, Palette.CHOCOLATE)
+
+
+func _draw_icon(tex: Texture2D, center: Vector2, size: float, mirror: bool) -> void:
+	if tex == null:
+		return
+	var rect := Rect2(center - Vector2(size, size) * 0.5, Vector2(size, size))
+	if mirror:
+		draw_set_transform(center, 0.0, Vector2(-1, 1))
+		rect.position = -Vector2(size, size) * 0.5
+		draw_texture_rect(tex, rect, false)
+		draw_set_transform(Vector2.ZERO)
+	else:
+		draw_texture_rect(tex, rect, false)
+
+
+## Icons are cached: textures loaded inside _draw and dropped come back white (Kitchen Survivors).
+func _icon(icon_name: String) -> Texture2D:
+	if not _icons.has(icon_name):
+		_icons[icon_name] = load("res://assets/ui/%s.png" % icon_name)
+	return _icons[icon_name]

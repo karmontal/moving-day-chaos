@@ -21,4 +21,5 @@ const TRUCK := Color("f7f3ea")
 # Names the shared UI scripts expect.
 const ACCENT := Color("f26b4e")
 const BUTTON := Color("ffd27a")
+const CARDBOARD := Color("e8b878")
 const CHERRY := Color("2a8c99")

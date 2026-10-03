@@ -20,11 +20,19 @@ static func build() -> Theme:
 	t.set_color("font_hover_color", "CheckButton", Palette.CHOCOLATE)
 	t.set_color("font_pressed_color", "CheckButton", Palette.CHOCOLATE)
 
-	t.set_stylebox("normal", "Button", box(Palette.BUTTON, 28, 4))
-	t.set_stylebox("hover", "Button", box(Palette.BUTTON.lightened(0.15), 28, 4))
-	t.set_stylebox("pressed", "Button", box(Palette.ACCENT, 28, 4))
-	t.set_stylebox("focus", "Button", box(Color(0, 0, 0, 0), 28, 4, Palette.CHERRY))
-	t.set_stylebox("disabled", "Button", box(Color("e9dccb"), 28, 4, Color(Palette.CHOCOLATE, 0.3)))
+	# Buttons look like chunky cardboard boxes with a taped edge: thick bottom border = raised,
+	# pressed = pushed down (thin bottom border, text moves down with the content margin).
+	t.set_stylebox("normal", "Button", raised(Palette.CARDBOARD))
+	t.set_stylebox("hover", "Button", raised(Palette.CARDBOARD.lightened(0.12)))
+	t.set_stylebox("pressed", "Button", raised(Palette.ACCENT, true))
+	t.set_stylebox("hover_pressed", "Button", raised(Palette.ACCENT, true))
+	var focus := box(Color(0, 0, 0, 0), 26, 5, Palette.HIVIS)
+	focus.expand_margin_left = 6
+	focus.expand_margin_right = 6
+	focus.expand_margin_top = 6
+	focus.expand_margin_bottom = 6
+	t.set_stylebox("focus", "Button", focus)
+	t.set_stylebox("disabled", "Button", raised(Color("d8cfc4"), true))
 	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
 		t.set_stylebox(state, "OptionButton", t.get_stylebox(state, "Button"))
 
@@ -41,6 +49,19 @@ static func build() -> Theme:
 	t.set_constant("separation", "VBoxContainer", 18)
 	t.set_constant("separation", "HBoxContainer", 18)
 	return t
+
+
+## Cardboard button: rounded box, dark outline, deep bottom edge and a soft drop shadow.
+static func raised(color: Color, pressed := false) -> StyleBoxFlat:
+	var s := box(color, 26, 4)
+	s.border_width_bottom = 5 if pressed else 12
+	s.border_color = Palette.CHOCOLATE
+	s.content_margin_top = 18 if pressed else 12
+	s.content_margin_bottom = 8 if pressed else 14
+	s.shadow_color = Color(0, 0, 0, 0.0 if pressed else 0.22)
+	s.shadow_size = 0 if pressed else 6
+	s.shadow_offset = Vector2(0, 6)
+	return s
 
 
 static func box(color: Color, radius: int, border: int, border_color := Palette.CHOCOLATE) -> StyleBoxFlat:

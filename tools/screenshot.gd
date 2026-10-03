@@ -17,7 +17,13 @@ func _ready() -> void:
 	var seconds := float(args[3]) if args.size() > 3 else 4.0
 	get_window().size = Vector2i(1920, 1080)
 	Settings.character = 0
+	if which.contains(":"):
+		Mission.selected = which.get_slice(":", 1)
+		which = which.get_slice(":", 0)
 	match which:
+		"levels":
+			add_child(load("res://scenes/level_select.tscn").instantiate())
+			await _frames(30)
 		"select":
 			add_child(load("res://scenes/character_select.tscn").instantiate())
 			await _frames(30)
@@ -47,9 +53,12 @@ func _ready() -> void:
 				"overview":
 					_mission.rig.controls_mover = false
 					_mission.rig.set_process(false)
-					_mission.rig.global_position = Vector3(-1.5, 1.0, 3.5)
-					_mission.rig.rotation = Vector3(-0.75, 0.5, 0)
-					_mission.rig.spring.spring_length = 19.0
+					var hs: Dictionary = _mission.data.house
+					var c := Vector3((hs.min[0] + hs.max[0]) * 0.5, 1.0, (hs.min[1] + hs.max[1]) * 0.5 + 2.0)
+					var extent := maxf(hs.max[0] - hs.min[0], hs.max[1] - hs.min[1])
+					_mission.rig.global_position = c
+					_mission.rig.rotation = Vector3(-0.85, 0.45, 0)
+					_mission.rig.spring.spring_length = 9.0 + extent * 1.1
 					_mission.rig.spring.collision_mask = 0
 				"sofa":
 					await _sofa_scene()

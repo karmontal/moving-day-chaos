@@ -9,7 +9,7 @@ var _root := Control.new()
 var _clock: Label
 var _stats := Control.new()
 var _list := VBoxContainer.new()
-var _rows := {}  # Grabbable -> Label
+var _rows := {}  # item_id -> Label (one row per kind of item: "Small box 1/3")
 var _hands: Array[Panel] = []
 var _hint: Label
 var _popup: Modal = null
@@ -52,11 +52,13 @@ func _ready() -> void:
 	title.add_theme_color_override("font_color", Palette.ACCENT)
 	_list.add_child(title)
 	for item in mission.items:
+		if _rows.has(item.item_id):
+			continue
 		var l := Label.new()
 		l.add_theme_font_size_override("font_size", 20 if TouchControls.wanted() else 24)
 		l.add_theme_constant_override("line_spacing", -6)
 		_list.add_child(l)
-		_rows[item] = l
+		_rows[item.item_id] = l
 
 	var hands_box := HBoxContainer.new()
 	hands_box.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
@@ -105,17 +107,25 @@ func _process(_delta: float) -> void:
 	_clock.text = "%d:%02d" % [t / 60, t % 60]
 	_clock.add_theme_color_override("font_color", Palette.DANGER if t <= 30 else Palette.CREAM)
 	_stats.queue_redraw()
-	for item: Grabbable in _rows:
-		var l: Label = _rows[item]
+	var totals := {}  # item_id -> [total, delivered, broken]
+	for item in mission.items:
+		var c: Array = totals.get(item.item_id, [0, 0, 0])
+		c[0] += 1
+		if item.broken:
+			c[2] += 1
+		elif mission.delivered.has(item):
+			c[1] += 1
+		totals[item.item_id] = c
+	for id: String in _rows:
+		var l: Label = _rows[id]
+		var c: Array = totals.get(id, [0, 0, 0])
 		# Colour carries the state: Cairo has no check-mark glyphs.
 		var color := Palette.CHOCOLATE
-		var suffix := ""
-		if item.broken:
-			color = Palette.DANGER
-			suffix = "  " + tr("HUD_BROKEN")
-		elif mission.delivered.has(item):
-			color = Palette.GREEN
-		l.text = "•  %s%s" % [tr("ITEM_" + item.item_id.to_upper()), suffix]
+		if c[1] + c[2] >= c[0]:
+			color = Palette.GREEN if c[2] == 0 else Palette.DANGER
+		var count := "  %d/%d" % [c[1], c[0]] if c[0] > 1 or c[1] > 0 else ""
+		var broken := "  " + tr("HUD_BROKEN") if c[2] > 0 else ""
+		l.text = "•  %s%s%s" % [tr("ITEM_" + id.to_upper()), count, broken]
 		l.add_theme_color_override("font_color", color)
 	var player := mission.local_mover
 	if player and is_instance_valid(player):
@@ -166,6 +176,7 @@ func _open_pause() -> void:
 
 func _show_results(r: Dictionary) -> void:
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	AudioManager.play_music("menu", 1.5)
 	_popup = Modal.open(_root, "RES_COMPLETE" if r.complete else "RES_TIMEUP")
 	var stars := StarRow.new()
 	stars.count = r.stars
@@ -178,6 +189,11 @@ func _show_results(r: Dictionary) -> void:
 	if mission.is_client:
 		_popup.add_text(tr("LOBBY_WAITING_RETRY"), 30)
 	else:
+		if not mission.networked and r.stars > 0:
+			_popup.add_button("BTN_NEXT", func() -> void:
+				Mission.selected = Progress.next_mission(mission.mission_id)
+				get_tree().paused = false
+				get_tree().reload_current_scene())
 		_popup.add_button("BTN_RETRY", _restart)
 	_popup.add_button("BTN_MENU", _to_menu)
 	# Results stay up: closing with Esc would leave a frozen job behind.
@@ -189,6 +205,7 @@ func _restart() -> void:
 	if mission.networked:
 		Net.start_game(mission.mission_id)  # reloads the job for everyone
 	else:
+		Mission.selected = mission.mission_id
 		get_tree().reload_current_scene()
 
 

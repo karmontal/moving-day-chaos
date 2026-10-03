@@ -18,6 +18,7 @@ func _ready() -> void:
 	await _test_grab_and_carry()
 	await _test_sofa_needs_two()
 	await _test_fragile()
+	await _test_all_levels()
 	await _test_mission_delivery()
 	await _test_mission_soak()
 	print("\n%d checks, %d failures" % [_checks, _failures])
@@ -280,6 +281,35 @@ func _new_mission() -> Mission:
 	add_child(m)
 	await _wait(0.1)
 	return m
+
+
+func _test_all_levels() -> void:
+	eq(Progress.mission_order().size(), Data.missions.size(), "every mission has an order")
+	check(Data.missions.size() >= 11, "at least 11 jobs")
+	for id in Progress.mission_order():
+		var data := Data.mission(id)
+		check(tr(String(data.title)) != String(data.title), "title translation for " + id)
+		var m: Mission = MISSION_SCENE.instantiate()
+		m.local_player = false
+		m.mission_id = id
+		add_child(m)
+		await _wait(1.6)
+		var expected := 0
+		for e: Dictionary in data.items:
+			expected += int(e.get("count", 1))
+		eq(m.items.size(), expected, "%s spawns all %d items" % [id, expected])
+		var mn := Vector2(data.house.min[0], data.house.min[1])
+		var mx := Vector2(data.house.max[0], data.house.max[1])
+		var bad := []
+		for item in m.items:
+			var p := item.global_position
+			if item.broken or p.y < 0.0 or p.y > 2.5 or p.x < mn.x or p.x > mx.x or p.z < mn.y or p.z > mx.y:
+				bad.append("%s@(%.1f,%.1f,%.1f)%s" % [item.item_id, p.x, p.y, p.z, " broken" if item.broken else ""])
+		check(bad.is_empty(), "%s: items rest unbroken inside the house %s" % [id, bad])
+		var mover := m.movers[0]
+		check(mover.global_position.y > 0.3 and mover.global_position.y < 1.5, "%s: mover spawns standing (y=%.2f)" % [id, mover.global_position.y])
+		m.queue_free()
+		await _wait(0.1)
 
 
 func _test_mission_delivery() -> void:

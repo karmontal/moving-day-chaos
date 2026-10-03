@@ -10,6 +10,8 @@ signal item_broken(item: Grabbable)
 signal finished(result: Dictionary)
 
 @export var mission_id := "starter_apartment"
+## The job picked on the level board (solo) — used when the scene is opened for real play.
+static var selected := "starter_apartment"
 ## Players in this job; 1 = solo (hands get Data.game.solo_strength).
 @export var player_count := 1
 ## Off for tests and screenshots that drive movers directly.
@@ -42,11 +44,14 @@ var _targets := {}  # Node3D -> Transform3D from the latest snapshot (clients)
 
 
 func _ready() -> void:
+	if Net.active and Net.in_game:
+		mission_id = Net.mission_id
+	elif local_player and Data.missions.has(selected):
+		mission_id = selected
 	data = Data.mission(mission_id)
 	time_left = data.time
 	zone = LevelBuilder.build(self, data)
-	for entry: Dictionary in data.items:
-		_spawn_item(entry)
+	_spawn_items(data.items)
 	var spawn := Vector3(data.spawn[0], 0.0, data.spawn[1])
 	networked = Net.active and Net.in_game
 	is_client = networked and not Net.is_host()
@@ -96,11 +101,54 @@ func spawn_mover(feet: Vector3, character := -1, peer := 1) -> Mover:
 	return m
 
 
-func _spawn_item(entry: Dictionary) -> void:
-	var item := Grabbable.create(entry.id)
+## Items are either placed ({id, pos, yaw}) or scattered ({id, count, area: [x0, z0, x1, z1]}).
+## Scattering uses a seed from the mission id, so every player online gets the same house.
+func _spawn_items(entries: Array) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash(mission_id)
+	var placed: Array[Vector3] = []  # x, z, radius
+	for entry: Dictionary in entries:
+		if entry.has("pos"):
+			var r := footprint(entry.id)
+			placed.append(Vector3(entry.pos[0], entry.pos[1], r))
+			_spawn_item(entry.id, Vector2(entry.pos[0], entry.pos[1]), float(entry.get("yaw", 0.0)))
+	for entry: Dictionary in entries:
+		if entry.has("pos"):
+			continue
+		var r := footprint(entry.id)
+		var area: Array = entry.area
+		for n in int(entry.get("count", 1)):
+			var spot := Vector2((area[0] + area[2]) * 0.5, (area[1] + area[3]) * 0.5)
+			for attempt in 80:
+				var cand := Vector2(rng.randf_range(area[0] + r, maxf(area[0] + r, area[2] - r)),
+					rng.randf_range(area[1] + r, maxf(area[1] + r, area[3] - r)))
+				var ok := true
+				for q in placed:
+					if cand.distance_to(Vector2(q.x, q.y)) < r + q.z + 0.12:
+						ok = false
+						break
+				spot = cand
+				if ok:
+					break
+			placed.append(Vector3(spot.x, spot.y, r))
+			_spawn_item(entry.id, spot, rng.randf_range(-25.0, 25.0) + (90.0 if rng.randf() < 0.3 else 0.0))
+
+
+## Rough radius of an item's floor footprint (from its parts in data/furniture.json).
+static func footprint(id: String) -> float:
+	var r := 0.2
+	for part: Dictionary in Data.item(id).parts:
+		var pos := Data.vec3(part.pos)
+		var half := Data.vec3(part.size) * 0.5 if part.has("size") else Vector3.ONE * float(part.get("radius", 0.2))
+		r = maxf(r, Vector2(absf(pos.x) + half.x, absf(pos.z) + half.z).length())
+	return r
+
+
+func _spawn_item(id: String, pos: Vector2, yaw_deg: float) -> void:
+	var item := Grabbable.create(id)
 	add_child(item)
-	item.global_position = Vector3(entry.pos[0], item.bottom_offset() + 0.02, entry.pos[1])
-	item.rotation.y = deg_to_rad(float(entry.get("yaw", 0.0)))
+	item.global_position = Vector3(pos.x, item.bottom_offset() + 0.02, pos.y)
+	item.rotation.y = deg_to_rad(yaw_deg)
 	item.broke.connect(_on_item_broke)
 	_add_tag(item)
 	items.append(item)
@@ -148,6 +196,8 @@ func _physics_process(delta: float) -> void:
 
 
 func _tick_sound() -> void:
+	if not is_finished:
+		AudioManager.play_music("hurry" if time_left <= 30.0 else "job")
 	var secs := int(ceil(time_left))
 	if secs <= 10 and secs != _last_tick and secs > 0 and not is_finished:
 		_last_tick = secs
@@ -248,6 +298,7 @@ func finish() -> void:
 		return
 	is_finished = true
 	var r := result()
+	Progress.record(mission_id, r.stars, r.money)
 	AudioManager.play("win" if r.stars > 0 else "lose")
 	if rig:
 		rig.active = false
@@ -342,6 +393,7 @@ func _net_finished(r: Dictionary) -> void:
 	if is_finished:
 		return
 	is_finished = true
+	Progress.record(mission_id, r.stars, r.money)
 	AudioManager.play("win" if r.stars > 0 else "lose")
 	if rig:
 		rig.active = false

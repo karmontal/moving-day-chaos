@@ -34,7 +34,7 @@ func _ready() -> void:
 	go.custom_minimum_size = Vector2(420, 100)
 	go.pressed.connect(func() -> void:
 		AudioManager.play("click")
-		get_tree().change_scene_to_file("res://scenes/mission.tscn"))
+		get_tree().change_scene_to_file("res://scenes/level_select.tscn"))
 	row.add_child(go)
 	go.grab_focus()
 

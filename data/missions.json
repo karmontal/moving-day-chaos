@@ -1,26 +1,1742 @@
 {
-  "starter_apartment": {
-    "time": 300,
-    "spawn": [1.0, 2.5],
-    "house": {
-      "min": [-8.0, -5.0], "max": [4.0, 5.0],
-      "wall_height": 2.6, "wall_thickness": 0.2,
-      "interior_wall_x": -2.0, "interior_door_z": -1.5, "interior_door_width": 1.15,
-      "front_door_x": 1.0, "front_door_width": 1.5, "door_height": 2.15
+ "starter_apartment": {
+  "time": 300,
+  "spawn": [
+   1.0,
+   2.5
+  ],
+  "house": {
+   "min": [
+    -8.0,
+    -5.0
+   ],
+   "max": [
+    4.0,
+    5.0
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "interior_wall_x": -2.0,
+   "interior_door_z": -1.5,
+   "interior_door_width": 1.15,
+   "front_door_x": 1.0,
+   "front_door_width": 1.5,
+   "door_height": 2.15,
+   "floors": [
+    {
+     "min": [
+      -8,
+      -5
+     ],
+     "max": [
+      -2,
+      5
+     ],
+     "color": "c99a6b"
     },
-    "truck": {"center_x": 1.0, "rear_z": 10.5, "length": 5.0, "width": 2.6, "bed_height": 0.9, "ramp_length": 2.6, "ramp_width": 1.8},
-    "items": [
-      {"id": "sofa", "pos": [-5.0, 3.9], "yaw": 0},
-      {"id": "tv", "pos": [-5.0, -4.3], "yaw": 0},
-      {"id": "lamp", "pos": [-7.3, -4.3], "yaw": 0},
-      {"id": "plant", "pos": [-7.3, 4.2], "yaw": 0},
-      {"id": "box_books", "pos": [-3.0, -4.2], "yaw": 20},
-      {"id": "chair", "pos": [-4.6, 0.6], "yaw": 160},
-      {"id": "box_small", "pos": [2.9, -3.8], "yaw": 10},
-      {"id": "box_small", "pos": [3.3, -3.1], "yaw": -15},
-      {"id": "box_large", "pos": [0.3, -4.1], "yaw": 5},
-      {"id": "plant", "pos": [3.3, 4.2], "yaw": 0},
-      {"id": "chair", "pos": [-0.8, 3.6], "yaw": 200}
+    {
+     "min": [
+      -2,
+      -5
+     ],
+     "max": [
+      4,
+      5
+     ],
+     "color": "d9ccb4"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 1.0,
+   "rear_z": 10.5,
+   "length": 5.0,
+   "width": 2.6,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "sofa",
+    "pos": [
+     -5.0,
+     3.9
+    ],
+    "yaw": 0
+   },
+   {
+    "id": "tv",
+    "pos": [
+     -5.0,
+     -4.3
+    ],
+    "yaw": 0
+   },
+   {
+    "id": "lamp",
+    "pos": [
+     -7.3,
+     -4.3
+    ],
+    "yaw": 0
+   },
+   {
+    "id": "plant",
+    "pos": [
+     -7.3,
+     4.2
+    ],
+    "yaw": 0
+   },
+   {
+    "id": "box_books",
+    "pos": [
+     -3.0,
+     -4.2
+    ],
+    "yaw": 20
+   },
+   {
+    "id": "chair",
+    "pos": [
+     -4.6,
+     0.6
+    ],
+    "yaw": 160
+   },
+   {
+    "id": "box_small",
+    "pos": [
+     2.9,
+     -3.8
+    ],
+    "yaw": 10
+   },
+   {
+    "id": "box_small",
+    "pos": [
+     3.3,
+     -3.1
+    ],
+    "yaw": -15
+   },
+   {
+    "id": "box_large",
+    "pos": [
+     0.3,
+     -4.1
+    ],
+    "yaw": 5
+   },
+   {
+    "id": "plant",
+    "pos": [
+     3.3,
+     4.2
+    ],
+    "yaw": 0
+   },
+   {
+    "id": "chair",
+    "pos": [
+     -0.8,
+     3.6
+    ],
+    "yaw": 200
+   }
+  ],
+  "order": 1,
+  "title": "LVL_STARTER"
+ },
+ "tiny_studio": {
+  "order": 2,
+  "title": "LVL_STUDIO",
+  "time": 180,
+  "spawn": [
+   0,
+   1.8
+  ],
+  "house": {
+   "min": [
+    -3.2,
+    -3
+   ],
+   "max": [
+    3.2,
+    3
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 0.0,
+   "front_door_width": 1.4,
+   "door_height": 2.15,
+   "floors": [
+    {
+     "min": [
+      -3.2,
+      -3
+     ],
+     "max": [
+      3.2,
+      3
+     ],
+     "color": "c99a6b"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 0.0,
+   "rear_z": 8.5,
+   "length": 5.0,
+   "width": 2.6,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "box_small",
+    "count": 4,
+    "area": [
+     -3,
+     -2.8,
+     3,
+     -0.6
     ]
-  }
+   },
+   {
+    "id": "box_large",
+    "count": 1,
+    "area": [
+     -3,
+     -2.8,
+     3,
+     -0.6
+    ]
+   },
+   {
+    "id": "lamp",
+    "count": 1,
+    "area": [
+     -3,
+     0,
+     -1.5,
+     2.6
+    ]
+   },
+   {
+    "id": "plant",
+    "count": 1,
+    "area": [
+     1.5,
+     0,
+     3,
+     2.6
+    ]
+   },
+   {
+    "id": "armchair",
+    "count": 1,
+    "area": [
+     -1.5,
+     -0.5,
+     1.5,
+     1.0
+    ]
+   }
+  ]
+ },
+ "student_dorm": {
+  "order": 3,
+  "title": "LVL_DORM",
+  "time": 270,
+  "spawn": [
+   0,
+   2.4
+  ],
+  "house": {
+   "min": [
+    -7,
+    -4.5
+   ],
+   "max": [
+    7,
+    4
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 0.0,
+   "front_door_width": 1.4,
+   "door_height": 2.15,
+   "walls": [
+    {
+     "axis": "x",
+     "at": 0.0,
+     "from": -7,
+     "to": 7,
+     "doors": [
+      [
+       -4.7,
+       1.1
+      ],
+      [
+       0.0,
+       1.1
+      ],
+      [
+       4.7,
+       1.1
+      ]
+     ]
+    },
+    {
+     "axis": "z",
+     "at": -2.35,
+     "from": -4.5,
+     "to": 0
+    },
+    {
+     "axis": "z",
+     "at": 2.35,
+     "from": -4.5,
+     "to": 0
+    }
+   ],
+   "floors": [
+    {
+     "min": [
+      -7,
+      -4.5
+     ],
+     "max": [
+      7,
+      0
+     ],
+     "color": "b9d3e8"
+    },
+    {
+     "min": [
+      -7,
+      0
+     ],
+     "max": [
+      7,
+      4
+     ],
+     "color": "c8c4bd"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 0.0,
+   "rear_z": 9.5,
+   "length": 5.0,
+   "width": 2.6,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "box_books",
+    "count": 2,
+    "area": [
+     -6.8,
+     -4.3,
+     -2.6,
+     -0.3
+    ]
+   },
+   {
+    "id": "desk",
+    "count": 1,
+    "area": [
+     -6.8,
+     -4.3,
+     -2.6,
+     -0.3
+    ]
+   },
+   {
+    "id": "monitor",
+    "count": 1,
+    "area": [
+     -6.8,
+     -4.3,
+     -2.6,
+     -0.3
+    ]
+   },
+   {
+    "id": "box_books",
+    "count": 2,
+    "area": [
+     -2.1,
+     -4.3,
+     2.1,
+     -0.3
+    ]
+   },
+   {
+    "id": "guitar",
+    "count": 1,
+    "area": [
+     -2.1,
+     -4.3,
+     2.1,
+     -0.3
+    ]
+   },
+   {
+    "id": "chair",
+    "count": 1,
+    "area": [
+     -2.1,
+     -4.3,
+     2.1,
+     -0.3
+    ]
+   },
+   {
+    "id": "desk",
+    "count": 1,
+    "area": [
+     2.6,
+     -4.3,
+     6.8,
+     -0.3
+    ]
+   },
+   {
+    "id": "monitor",
+    "count": 1,
+    "area": [
+     2.6,
+     -4.3,
+     6.8,
+     -0.3
+    ]
+   },
+   {
+    "id": "box_small",
+    "count": 3,
+    "area": [
+     2.6,
+     -4.3,
+     6.8,
+     -0.3
+    ]
+   },
+   {
+    "id": "lamp",
+    "count": 1,
+    "area": [
+     -6.5,
+     0.6,
+     -3,
+     3.6
+    ]
+   }
+  ]
+ },
+ "grandmas_house": {
+  "order": 4,
+  "title": "LVL_GRANDMA",
+  "time": 260,
+  "spawn": [
+   2.5,
+   3.2
+  ],
+  "theme": "sunset",
+  "house": {
+   "min": [
+    -6,
+    -5
+   ],
+   "max": [
+    6,
+    5
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 2.5,
+   "front_door_width": 1.5,
+   "door_height": 2.15,
+   "walls": [
+    {
+     "axis": "z",
+     "at": 0.0,
+     "from": -5,
+     "to": 5,
+     "door": -2.0,
+     "door_width": 1.2
+    }
+   ],
+   "floors": [
+    {
+     "min": [
+      -6,
+      -5
+     ],
+     "max": [
+      0,
+      5
+     ],
+     "color": "ecd2dc"
+    },
+    {
+     "min": [
+      0,
+      -5
+     ],
+     "max": [
+      6,
+      5
+     ],
+     "color": "c99a6b"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 2.5,
+   "rear_z": 10.5,
+   "length": 5.0,
+   "width": 2.6,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "vase",
+    "count": 3,
+    "area": [
+     -5.8,
+     -4.8,
+     -0.5,
+     4.8
+    ]
+   },
+   {
+    "id": "lamp",
+    "count": 1,
+    "area": [
+     -5.8,
+     -4.8,
+     -0.5,
+     4.8
+    ]
+   },
+   {
+    "id": "tv",
+    "count": 1,
+    "area": [
+     -5.8,
+     -4.8,
+     -0.5,
+     -1
+    ]
+   },
+   {
+    "id": "fishbowl",
+    "count": 1,
+    "area": [
+     -5.8,
+     1,
+     -0.5,
+     4.8
+    ]
+   },
+   {
+    "id": "plant",
+    "count": 2,
+    "area": [
+     0.5,
+     -4.8,
+     5.8,
+     1.5
+    ]
+   },
+   {
+    "id": "vase",
+    "count": 1,
+    "area": [
+     0.5,
+     -4.8,
+     5.8,
+     1.5
+    ]
+   },
+   {
+    "id": "armchair",
+    "count": 1,
+    "area": [
+     0.5,
+     -4.8,
+     5.8,
+     1.5
+    ]
+   },
+   {
+    "id": "box_small",
+    "count": 2,
+    "area": [
+     0.5,
+     -4.8,
+     5.8,
+     1.5
+    ]
+   }
+  ]
+ },
+ "family_home": {
+  "order": 5,
+  "title": "LVL_FAMILY",
+  "time": 330,
+  "spawn": [
+   2.0,
+   4.6
+  ],
+  "house": {
+   "min": [
+    -8,
+    -6
+   ],
+   "max": [
+    6,
+    6
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 2.0,
+   "front_door_width": 1.6,
+   "door_height": 2.15,
+   "walls": [
+    {
+     "axis": "z",
+     "at": -2.0,
+     "from": -6,
+     "to": 6,
+     "door": 2.0,
+     "door_width": 1.2
+    },
+    {
+     "axis": "x",
+     "at": 0.0,
+     "from": -2,
+     "to": 6,
+     "door": 2.0,
+     "door_width": 1.2
+    }
+   ],
+   "floors": [
+    {
+     "min": [
+      -8,
+      -6
+     ],
+     "max": [
+      -2,
+      6
+     ],
+     "color": "b9d3e8"
+    },
+    {
+     "min": [
+      -2,
+      -6
+     ],
+     "max": [
+      6,
+      0
+     ],
+     "color": "d9ccb4"
+    },
+    {
+     "min": [
+      -2,
+      0
+     ],
+     "max": [
+      6,
+      6
+     ],
+     "color": "c99a6b"
+    }
+   ],
+   "props": [
+    {
+     "pos": [
+      3.0,
+      -5.6
+     ],
+     "size": [
+      5.6,
+      0.9,
+      0.6
+     ],
+     "color": "e8e2d4"
+    },
+    {
+     "pos": [
+      5.6,
+      -3.6
+     ],
+     "size": [
+      0.6,
+      0.9,
+      3.4
+     ],
+     "color": "e8e2d4"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 2.0,
+   "rear_z": 11.5,
+   "length": 6.0,
+   "width": 2.8,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "bed",
+    "count": 1,
+    "area": [
+     -7.8,
+     -5.8,
+     -2.4,
+     -1
+    ]
+   },
+   {
+    "id": "wardrobe",
+    "count": 1,
+    "area": [
+     -7.8,
+     -5.8,
+     -2.4,
+     -1
+    ]
+   },
+   {
+    "id": "box_small",
+    "count": 2,
+    "area": [
+     -7.8,
+     0,
+     -2.4,
+     5.8
+    ]
+   },
+   {
+    "id": "lamp",
+    "count": 1,
+    "area": [
+     -7.8,
+     0,
+     -2.4,
+     5.8
+    ]
+   },
+   {
+    "id": "fridge",
+    "count": 1,
+    "area": [
+     -1.6,
+     -4.8,
+     4.8,
+     -0.4
+    ]
+   },
+   {
+    "id": "washer",
+    "count": 1,
+    "area": [
+     -1.6,
+     -4.8,
+     4.8,
+     -0.4
+    ]
+   },
+   {
+    "id": "box_large",
+    "count": 2,
+    "area": [
+     -1.6,
+     -4.8,
+     4.8,
+     -0.4
+    ]
+   },
+   {
+    "id": "sofa",
+    "count": 1,
+    "area": [
+     -1.6,
+     0.4,
+     5.8,
+     3.6
+    ]
+   },
+   {
+    "id": "tv",
+    "count": 1,
+    "area": [
+     -1.6,
+     0.4,
+     5.8,
+     3.6
+    ]
+   },
+   {
+    "id": "chair",
+    "count": 2,
+    "area": [
+     -1.6,
+     0.4,
+     5.8,
+     3.6
+    ]
+   },
+   {
+    "id": "plant",
+    "count": 1,
+    "area": [
+     -1.6,
+     0.4,
+     5.8,
+     3.6
+    ]
+   }
+  ]
+ },
+ "office_move": {
+  "order": 6,
+  "title": "LVL_OFFICE",
+  "time": 300,
+  "spawn": [
+   0,
+   3.6
+  ],
+  "house": {
+   "min": [
+    -7,
+    -5
+   ],
+   "max": [
+    7,
+    5
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 0.0,
+   "front_door_width": 1.8,
+   "door_height": 2.15,
+   "floors": [
+    {
+     "min": [
+      -7,
+      -5
+     ],
+     "max": [
+      7,
+      5
+     ],
+     "color": "c8c4bd"
+    }
+   ],
+   "props": [
+    {
+     "pos": [
+      -3.0,
+      -0.5
+     ],
+     "size": [
+      0.5,
+      2.6,
+      0.5
+     ],
+     "color": "e8e2d4"
+    },
+    {
+     "pos": [
+      3.0,
+      -0.5
+     ],
+     "size": [
+      0.5,
+      2.6,
+      0.5
+     ],
+     "color": "e8e2d4"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 0.0,
+   "rear_z": 10.5,
+   "length": 6.0,
+   "width": 2.8,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "desk",
+    "count": 3,
+    "area": [
+     -6.8,
+     -4.8,
+     6.8,
+     -1.2
+    ]
+   },
+   {
+    "id": "monitor",
+    "count": 3,
+    "area": [
+     -6.8,
+     -4.8,
+     6.8,
+     -1.2
+    ]
+   },
+   {
+    "id": "chair",
+    "count": 3,
+    "area": [
+     -6.8,
+     0.2,
+     6.8,
+     2.6
+    ]
+   },
+   {
+    "id": "water_cooler",
+    "count": 1,
+    "area": [
+     -6.8,
+     0.2,
+     6.8,
+     4.6
+    ]
+   },
+   {
+    "id": "bookshelf",
+    "count": 1,
+    "area": [
+     -6.8,
+     0.2,
+     6.8,
+     4.6
+    ]
+   },
+   {
+    "id": "box_large",
+    "count": 2,
+    "area": [
+     -6.8,
+     0.2,
+     6.8,
+     4.6
+    ]
+   }
+  ]
+ },
+ "winter_cabin": {
+  "order": 7,
+  "title": "LVL_CABIN",
+  "time": 240,
+  "spawn": [
+   1.5,
+   2.6
+  ],
+  "ice": true,
+  "theme": "winter",
+  "house": {
+   "min": [
+    -4,
+    -4
+   ],
+   "max": [
+    4,
+    4
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 1.5,
+   "front_door_width": 1.4,
+   "door_height": 2.15,
+   "walls": [
+    {
+     "axis": "z",
+     "at": 0.0,
+     "from": -4,
+     "to": 4,
+     "door": 1.5,
+     "door_width": 1.2
+    }
+   ],
+   "floors": [
+    {
+     "min": [
+      -4,
+      -4
+     ],
+     "max": [
+      4,
+      4
+     ],
+     "color": "c99a6b"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 1.5,
+   "rear_z": 13.0,
+   "length": 5.0,
+   "width": 2.6,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "box_small",
+    "count": 3,
+    "area": [
+     -3.8,
+     -3.8,
+     -0.4,
+     3.8
+    ]
+   },
+   {
+    "id": "bookshelf",
+    "count": 1,
+    "area": [
+     -3.8,
+     -3.8,
+     -0.4,
+     3.8
+    ]
+   },
+   {
+    "id": "guitar",
+    "count": 1,
+    "area": [
+     -3.8,
+     -3.8,
+     -0.4,
+     3.8
+    ]
+   },
+   {
+    "id": "armchair",
+    "count": 1,
+    "area": [
+     0.4,
+     -3.8,
+     3.8,
+     0.8
+    ]
+   },
+   {
+    "id": "lamp",
+    "count": 1,
+    "area": [
+     0.4,
+     -3.8,
+     3.8,
+     0.8
+    ]
+   },
+   {
+    "id": "plant",
+    "count": 1,
+    "area": [
+     0.4,
+     -3.8,
+     3.8,
+     0.8
+    ]
+   }
+  ]
+ },
+ "narrow_townhouse": {
+  "order": 8,
+  "title": "LVL_TOWNHOUSE",
+  "time": 330,
+  "spawn": [
+   0,
+   2.6
+  ],
+  "house": {
+   "min": [
+    -2.6,
+    -10
+   ],
+   "max": [
+    2.6,
+    4
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 0.0,
+   "front_door_width": 1.15,
+   "door_height": 2.15,
+   "walls": [
+    {
+     "axis": "x",
+     "at": -1.5,
+     "from": -2.6,
+     "to": 2.6,
+     "door": 1.3,
+     "door_width": 1.0
+    },
+    {
+     "axis": "x",
+     "at": -6.0,
+     "from": -2.6,
+     "to": 2.6,
+     "door": -1.3,
+     "door_width": 1.0
+    }
+   ],
+   "floors": [
+    {
+     "min": [
+      -2.6,
+      -10
+     ],
+     "max": [
+      2.6,
+      -6
+     ],
+     "color": "b9d3e8"
+    },
+    {
+     "min": [
+      -2.6,
+      -6
+     ],
+     "max": [
+      2.6,
+      -1.5
+     ],
+     "color": "c99a6b"
+    },
+    {
+     "min": [
+      -2.6,
+      -1.5
+     ],
+     "max": [
+      2.6,
+      4
+     ],
+     "color": "d9ccb4"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 0.0,
+   "rear_z": 9.5,
+   "length": 5.0,
+   "width": 2.6,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "sofa",
+    "count": 1,
+    "area": [
+     -2.4,
+     -9.8,
+     2.4,
+     -6.4
+    ]
+   },
+   {
+    "id": "box_small",
+    "count": 2,
+    "area": [
+     -2.4,
+     -9.8,
+     2.4,
+     -6.4
+    ]
+   },
+   {
+    "id": "fridge",
+    "count": 1,
+    "area": [
+     -2.4,
+     -5.8,
+     2.4,
+     -1.9
+    ]
+   },
+   {
+    "id": "box_books",
+    "count": 2,
+    "area": [
+     -2.4,
+     -5.8,
+     2.4,
+     -1.9
+    ]
+   },
+   {
+    "id": "bookshelf",
+    "count": 1,
+    "area": [
+     -2.4,
+     -1.1,
+     2.4,
+     2.4
+    ]
+   },
+   {
+    "id": "tv",
+    "count": 1,
+    "area": [
+     -2.4,
+     -1.1,
+     2.4,
+     2.4
+    ]
+   },
+   {
+    "id": "box_small",
+    "count": 1,
+    "area": [
+     -2.4,
+     -1.1,
+     2.4,
+     2.4
+    ]
+   }
+  ]
+ },
+ "music_shop": {
+  "order": 9,
+  "title": "LVL_MUSIC",
+  "time": 300,
+  "spawn": [
+   0,
+   3.6
+  ],
+  "house": {
+   "min": [
+    -7,
+    -5
+   ],
+   "max": [
+    7,
+    5
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 0.0,
+   "front_door_width": 2.0,
+   "door_height": 2.15,
+   "walls": [
+    {
+     "axis": "x",
+     "at": -1.0,
+     "from": -7,
+     "to": 7,
+     "door": 0.0,
+     "door_width": 1.9
+    }
+   ],
+   "floors": [
+    {
+     "min": [
+      -7,
+      -5
+     ],
+     "max": [
+      7,
+      -1
+     ],
+     "color": "c8c4bd"
+    },
+    {
+     "min": [
+      -7,
+      -1
+     ],
+     "max": [
+      7,
+      5
+     ],
+     "color": "c99a6b"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 0.0,
+   "rear_z": 10.5,
+   "length": 6.0,
+   "width": 2.8,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "piano",
+    "count": 1,
+    "area": [
+     -6.5,
+     -4.8,
+     6.5,
+     -1.6
+    ]
+   },
+   {
+    "id": "box_large",
+    "count": 2,
+    "area": [
+     -6.5,
+     -4.8,
+     6.5,
+     -1.6
+    ]
+   },
+   {
+    "id": "guitar",
+    "count": 4,
+    "area": [
+     -6.8,
+     -0.4,
+     6.8,
+     4.6
+    ]
+   },
+   {
+    "id": "armchair",
+    "count": 1,
+    "area": [
+     -6.8,
+     -0.4,
+     6.8,
+     4.6
+    ]
+   },
+   {
+    "id": "lamp",
+    "count": 1,
+    "area": [
+     -6.8,
+     -0.4,
+     6.8,
+     4.6
+    ]
+   }
+  ]
+ },
+ "aquarium_job": {
+  "order": 10,
+  "title": "LVL_AQUARIUM",
+  "time": 240,
+  "spawn": [
+   2.5,
+   3.4
+  ],
+  "house": {
+   "min": [
+    -5,
+    -5
+   ],
+   "max": [
+    5,
+    5
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 2.5,
+   "front_door_width": 1.6,
+   "door_height": 2.15,
+   "walls": [
+    {
+     "axis": "z",
+     "at": 0.0,
+     "from": -5,
+     "to": 5,
+     "door": 0.0,
+     "door_width": 1.5
+    }
+   ],
+   "floors": [
+    {
+     "min": [
+      -5,
+      -5
+     ],
+     "max": [
+      0,
+      5
+     ],
+     "color": "b9d3e8"
+    },
+    {
+     "min": [
+      0,
+      -5
+     ],
+     "max": [
+      5,
+      5
+     ],
+     "color": "d9ccb4"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 2.5,
+   "rear_z": 10.5,
+   "length": 5.0,
+   "width": 2.6,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "aquarium",
+    "count": 1,
+    "area": [
+     -4.8,
+     -4.8,
+     -0.6,
+     4.8
+    ]
+   },
+   {
+    "id": "fishbowl",
+    "count": 2,
+    "area": [
+     -4.8,
+     -4.8,
+     -0.6,
+     4.8
+    ]
+   },
+   {
+    "id": "fishbowl",
+    "count": 1,
+    "area": [
+     0.6,
+     -4.8,
+     4.8,
+     2.0
+    ]
+   },
+   {
+    "id": "vase",
+    "count": 2,
+    "area": [
+     0.6,
+     -4.8,
+     4.8,
+     2.0
+    ]
+   },
+   {
+    "id": "plant",
+    "count": 2,
+    "area": [
+     0.6,
+     -4.8,
+     4.8,
+     2.0
+    ]
+   },
+   {
+    "id": "box_small",
+    "count": 2,
+    "area": [
+     0.6,
+     -4.8,
+     4.8,
+     2.0
+    ]
+   }
+  ]
+ },
+ "mansion": {
+  "order": 11,
+  "title": "LVL_MANSION",
+  "time": 420,
+  "spawn": [
+   0,
+   4.4
+  ],
+  "house": {
+   "min": [
+    -10,
+    -8
+   ],
+   "max": [
+    10,
+    6
+   ],
+   "wall_height": 2.6,
+   "wall_thickness": 0.2,
+   "front_door_x": 0.0,
+   "front_door_width": 2.0,
+   "door_height": 2.15,
+   "walls": [
+    {
+     "axis": "x",
+     "at": -1.0,
+     "from": -10,
+     "to": 10,
+     "doors": [
+      [
+       -6.5,
+       1.3
+      ],
+      [
+       0.0,
+       1.6
+      ],
+      [
+       6.5,
+       1.3
+      ]
+     ]
+    },
+    {
+     "axis": "z",
+     "at": -3.5,
+     "from": -8,
+     "to": -1
+    },
+    {
+     "axis": "z",
+     "at": 3.5,
+     "from": -8,
+     "to": -1
+    }
+   ],
+   "floors": [
+    {
+     "min": [
+      -10,
+      -8
+     ],
+     "max": [
+      -3.5,
+      -1
+     ],
+     "color": "b9d3e8"
+    },
+    {
+     "min": [
+      -3.5,
+      -8
+     ],
+     "max": [
+      3.5,
+      -1
+     ],
+     "color": "ecd2dc"
+    },
+    {
+     "min": [
+      3.5,
+      -8
+     ],
+     "max": [
+      10,
+      -1
+     ],
+     "color": "cfe3c2"
+    },
+    {
+     "min": [
+      -10,
+      -1
+     ],
+     "max": [
+      10,
+      6
+     ],
+     "color": "c99a6b"
+    }
+   ]
+  },
+  "truck": {
+   "center_x": 0.0,
+   "rear_z": 11.5,
+   "length": 9.0,
+   "width": 3.2,
+   "bed_height": 0.9,
+   "ramp_length": 2.6,
+   "ramp_width": 1.8
+  },
+  "items": [
+   {
+    "id": "bed",
+    "count": 1,
+    "area": [
+     -9.8,
+     -7.8,
+     -3.9,
+     -1.4
+    ]
+   },
+   {
+    "id": "wardrobe",
+    "count": 1,
+    "area": [
+     -9.8,
+     -7.8,
+     -3.9,
+     -1.4
+    ]
+   },
+   {
+    "id": "lamp",
+    "count": 1,
+    "area": [
+     -9.8,
+     -7.8,
+     -3.9,
+     -1.4
+    ]
+   },
+   {
+    "id": "piano",
+    "count": 1,
+    "area": [
+     -3.1,
+     -7.8,
+     3.1,
+     -1.4
+    ]
+   },
+   {
+    "id": "vase",
+    "count": 2,
+    "area": [
+     -3.1,
+     -7.8,
+     3.1,
+     -1.4
+    ]
+   },
+   {
+    "id": "bed",
+    "count": 1,
+    "area": [
+     3.9,
+     -7.8,
+     9.8,
+     -1.4
+    ]
+   },
+   {
+    "id": "wardrobe",
+    "count": 1,
+    "area": [
+     3.9,
+     -7.8,
+     9.8,
+     -1.4
+    ]
+   },
+   {
+    "id": "tv",
+    "count": 1,
+    "area": [
+     3.9,
+     -7.8,
+     9.8,
+     -1.4
+    ]
+   },
+   {
+    "id": "sofa",
+    "count": 2,
+    "area": [
+     -9.8,
+     -0.4,
+     9.8,
+     3.6
+    ]
+   },
+   {
+    "id": "armchair",
+    "count": 2,
+    "area": [
+     -9.8,
+     -0.4,
+     9.8,
+     4.6
+    ]
+   },
+   {
+    "id": "box_large",
+    "count": 3,
+    "area": [
+     -9.8,
+     -0.4,
+     9.8,
+     5.6
+    ]
+   },
+   {
+    "id": "box_small",
+    "count": 3,
+    "area": [
+     -9.8,
+     -0.4,
+     9.8,
+     5.6
+    ]
+   },
+   {
+    "id": "bookshelf",
+    "count": 1,
+    "area": [
+     -9.8,
+     -0.4,
+     9.8,
+     5.6
+    ]
+   },
+   {
+    "id": "vase",
+    "count": 1,
+    "area": [
+     -9.8,
+     -0.4,
+     9.8,
+     5.6
+    ]
+   },
+   {
+    "id": "tv",
+    "count": 1,
+    "area": [
+     -9.8,
+     -0.4,
+     9.8,
+     5.6
+    ]
+   }
+  ]
+ }
 }

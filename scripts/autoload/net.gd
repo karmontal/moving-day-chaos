@@ -26,6 +26,8 @@ var in_game := false
 var last_error := ""
 ## Internet play: the room code friends type in (noray open id), empty on LAN.
 var room_code := ""
+## Job chosen by the host for the current session.
+var mission_id := "starter_apartment"
 var noray := NorayClient.new()
 var _join_code := ""
 var _tried_relay := false
@@ -328,9 +330,10 @@ func _sync_players(list: Dictionary) -> void:
 
 
 @rpc("authority", "reliable", "call_local")
-func _start(mission_id: String) -> void:
+func _start(id: String) -> void:
+	mission_id = id if Data.missions.has(id) else "starter_apartment"
 	in_game = true
-	session_started.emit(mission_id)
+	session_started.emit(id)
 	get_tree().change_scene_to_file("res://scenes/mission.tscn")
 
 

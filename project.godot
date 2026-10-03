@@ -27,6 +27,7 @@ AudioManager="*res://scripts/autoload/audio_manager.gd"
 PlatformServices="*res://scripts/autoload/platform_services.gd"
 Data="*res://scripts/autoload/data.gd"
 Net="*res://scripts/autoload/net.gd"
+Progress="*res://scripts/autoload/progress.gd"
 
 [display]
 

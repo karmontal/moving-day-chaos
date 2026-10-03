@@ -13,6 +13,8 @@ var _status: Label
 var _players_label: Label
 var _info_label: Label
 var _start: Button
+var _level_pick := OptionButton.new()
+var _level_ids: Array[String] = []
 var _picker: CharacterPicker
 
 
@@ -132,7 +134,16 @@ func _build_room() -> void:
 	_info_label = Label.new()
 	_info_label.add_theme_font_size_override("font_size", 28)
 	side.add_child(_info_label)
-	_start = _button("LOBBY_START", func() -> void: Net.start_game())
+	var level_row := HBoxContainer.new()
+	var level_label := Label.new()
+	level_label.text = "LOBBY_LEVEL"
+	level_row.add_child(level_label)
+	_level_ids = Progress.mission_order()
+	for id in _level_ids:
+		_level_pick.add_item(tr(String(Data.mission(id).get("title", id))))
+	level_row.add_child(_level_pick)
+	side.add_child(level_row)
+	_start = _button("LOBBY_START", func() -> void: Net.start_game(_level_ids[maxi(0, _level_pick.selected)]))
 	side.add_child(_start)
 	side.add_child(_button("LOBBY_LEAVE", func() -> void:
 		Net.leave()
@@ -228,6 +239,7 @@ func _refresh_room() -> void:
 	_picker.taken = Net.taken_characters(Net.my_id())
 	_picker.set_selected(Settings.character)
 	_start.visible = Net.is_host()
+	_level_pick.get_parent().visible = Net.is_host()
 	_code_label.visible = Net.room_code != ""
 	_code_label.text = tr("LOBBY_ROOM_CODE") % Net.room_code
 	if Net.is_host():
