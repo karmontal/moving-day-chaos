@@ -172,11 +172,23 @@ func _test_grab_and_carry() -> void:
 		await _wait(0.6)
 		var yaw0 := box.global_rotation.y
 		m.input.rotate = 1.0
-		await _wait(0.5)
-		check(absf(wrapf(box.global_rotation.y - yaw0, -PI, PI)) > 0.3, "Q/E spins the held box")
+		await _wait(0.9)
+		var turned := absf(wrapf(box.global_rotation.y - yaw0, -PI, PI))
+		check(turned > 0.3, "Q/E spins the held box (%.2f rad, hands %s/%s, dizzy %.2f)" % [turned, m.hands[0].held != null, m.hands[1].held != null, m.dizzy_time])
 	else:
 		check(false, "re-grab for rotation test")
 	m.input.rotate = 0.0
+	# A hard shove knocks the mover silly: hands let go, control comes back after a moment.
+	m.input.pitch = -1.05
+	m.input.grab = [true, true]
+	await _wait(0.6)
+	m.linear_velocity = Vector3(9, 0, 0)
+	await _wait(0.1)
+	check(m.dizzy_time > 0.0, "a big shove makes the mover dizzy")
+	check(m.held_items().is_empty(), "dizzy movers drop what they hold")
+	await _wait(1.6)
+	check(m.dizzy_time == 0.0, "dizziness wears off")
+	check(m.has_node("Visual"), "mover has its silly visual rig")
 	# Jump.
 	m.input.grab = [false, false]
 	await _wait(0.5)

@@ -9,7 +9,10 @@
     "air_control": 0.25,
     "jump_speed": 4.6,
     "turn_speed": 10.0,
-    "shoulder_offset": [0.24, 0.42, -0.05]
+    "shoulder_offset": [0.24, 0.42, -0.05],
+    "stumble_speed": 6.5,
+    "stumble_fall_speed": 8.0,
+    "dizzy_time": 1.4
   },
   "hand": {
     "radius": 0.13,

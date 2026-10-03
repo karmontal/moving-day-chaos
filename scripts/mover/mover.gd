@@ -21,12 +21,17 @@ var strength := 1.0:
 			h.strength = v
 var hands: Array[Hand] = []
 var on_floor := false
+## Walk cycle in radians; drives the waddle, the feet and the arm swing.
+var walk_phase := 0.0
+## > 0 while knocked silly: barely any control and the hands let go.
+var dizzy_time := 0.0
 
 var _cfg: Dictionary
 var _hand_cfg: Dictionary
 var _arms: Array[MeshInstance3D] = []
 var _jump_cooldown := 0.0
 var _jump_held := false
+var _prev_velocity := Vector3.ZERO
 
 
 func _init() -> void:
@@ -111,6 +116,7 @@ func held_items() -> Array[Grabbable]:
 
 func _physics_process(delta: float) -> void:
 	_check_floor()
+	_check_stumble(delta)
 	_walk(delta)
 	_drive_hands()
 	_rotate_held()
@@ -124,29 +130,50 @@ func _check_floor() -> void:
 	on_floor = not get_world_3d().direct_space_state.intersect_ray(q).is_empty()
 
 
+## A big sudden shove (a flying sofa, a long fall) knocks the mover silly for a moment.
+func _check_stumble(delta: float) -> void:
+	var dv := linear_velocity - _prev_velocity
+	_prev_velocity = linear_velocity
+	dizzy_time = maxf(0.0, dizzy_time - delta)
+	var horizontal := Vector2(dv.x, dv.z).length()
+	if dizzy_time <= 0.0 and (horizontal > float(_cfg.stumble_speed) or dv.y > float(_cfg.stumble_fall_speed)):
+		stumble()
+
+
+func stumble() -> void:
+	dizzy_time = float(_cfg.dizzy_time)
+	for h in hands:
+		h.release()
+	AudioManager.play("oof", 0.12)
+
+
 func _walk(delta: float) -> void:
 	var wish := Basis(Vector3.UP, input.yaw) * Vector3(input.move.x, 0.0, input.move.y)
 	wish = wish.limit_length(1.0)
 	var desired := wish * float(_cfg.walk_speed)
 	var hv := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
 	var limit := float(_cfg.max_move_force) * (1.0 if on_floor else float(_cfg.air_control))
+	if dizzy_time > 0.0:
+		limit *= 0.15
+	if on_floor:
+		walk_phase = fmod(walk_phase + delta * (5.5 + hv.length() * 2.2) * clampf(hv.length() / 0.4, 0.0, 1.0), TAU)
 	apply_central_force(((desired - hv) * mass * float(_cfg.accel)).limit_length(limit))
 
 	var diff := wrapf(input.yaw - rotation.y, -PI, PI)
 	angular_velocity = Vector3(0.0, diff * float(_cfg.turn_speed), 0.0)
 
 	_jump_cooldown = maxf(0.0, _jump_cooldown - delta)
-	if input.jump and not _jump_held and on_floor and _jump_cooldown <= 0.0:
+	if input.jump and not _jump_held and on_floor and _jump_cooldown <= 0.0 and dizzy_time <= 0.0:
 		linear_velocity.y = _cfg.jump_speed
 		_jump_cooldown = 0.35
-		AudioManager.play("jump", 0.1, -3.0)
+		AudioManager.play("hup", 0.12, -3.0)
 		jumped.emit()
 	_jump_held = input.jump
 
 
 func _drive_hands() -> void:
 	for h in hands:
-		var reaching := input.grab[0 if h.side < 0 else 1]
+		var reaching := input.grab[0 if h.side < 0 else 1] and dizzy_time <= 0.0
 		var sh := shoulder(h.side)
 		var target := sh + aim_offset() if reaching else _rest_target(h.side)
 		if reaching and absf(input.rotate) > 0.05:
@@ -175,8 +202,16 @@ func _rotate_held() -> void:
 		item.apply_torque(Vector3.UP * torque)
 
 
+## Idle hands dangle and swing with the walk; in the air (or dizzy) they flail upwards.
 func _rest_target(side: int) -> Vector3:
-	return shoulder(side) + global_basis * Vector3(0.05 * side, -float(_hand_cfg.rest_drop), -0.2)
+	var speed := clampf(Vector2(linear_velocity.x, linear_velocity.z).length() / 4.0, 0.0, 1.0)
+	var swing := sin(walk_phase + (PI if side > 0 else 0.0)) * 0.28 * speed
+	# Beside the body, not in front, so a box you just let go of does not land on your hands.
+	var local := Vector3(0.16 * side, -float(_hand_cfg.rest_drop), -0.05 + swing)
+	if not on_floor or dizzy_time > 0.0:
+		var t := Time.get_ticks_msec() / 1000.0
+		local = Vector3(0.35 * side, 0.35 + sin(t * 13.0 + side) * 0.15, -0.05 + cos(t * 11.0 + side) * 0.15)
+	return shoulder(side) + global_basis * local
 
 
 func _update_arms() -> void:
@@ -192,60 +227,10 @@ func _update_arms() -> void:
 
 
 func _build_visuals() -> void:
-	var color := Palette.PLAYER_COLORS[color_index]
-	var h := float(_cfg.height)
-	var r := float(_cfg.radius)
-	var body := MeshInstance3D.new()
-	var cm := CapsuleMesh.new()
-	cm.radius = r
-	cm.height = h
-	cm.material = _mat(color)
-	body.mesh = cm
-	add_child(body)
-	var vest := MeshInstance3D.new()
-	var vm := CylinderMesh.new()
-	vm.top_radius = r + 0.025
-	vm.bottom_radius = r + 0.03
-	vm.height = 0.42
-	vm.material = _mat(Palette.HIVIS)
-	vest.mesh = vm
-	vest.position = Vector3(0, 0.12, 0)
-	add_child(vest)
-	var stripe := MeshInstance3D.new()
-	var sm := CylinderMesh.new()
-	sm.top_radius = r + 0.035
-	sm.bottom_radius = r + 0.035
-	sm.height = 0.06
-	sm.material = _mat(Color("e8e8e8"))
-	stripe.mesh = sm
-	stripe.position = Vector3(0, 0.08, 0)
-	add_child(stripe)
-	var head := MeshInstance3D.new()
-	var hm := SphereMesh.new()
-	hm.radius = 0.24
-	hm.height = 0.46
-	hm.material = _mat(Palette.SKIN)
-	head.mesh = hm
-	head.position = Vector3(0, h * 0.5 + 0.12, 0)
-	add_child(head)
-	var hat := MeshInstance3D.new()
-	var hatm := SphereMesh.new()
-	hatm.radius = 0.25
-	hatm.height = 0.25
-	hatm.is_hemisphere = true
-	hatm.material = _mat(color.darkened(0.25))
-	hat.mesh = hatm
-	hat.position = head.position + Vector3(0, 0.05, 0)
-	add_child(hat)
-	for side in [-1, 1]:
-		var eye := MeshInstance3D.new()
-		var em := SphereMesh.new()
-		em.radius = 0.04
-		em.height = 0.08
-		em.material = _mat(Color("1d1d24"))
-		eye.mesh = em
-		eye.position = head.position + Vector3(0.085 * side, 0.0, -0.215)
-		add_child(eye)
+	var visual := MoverVisual.new()
+	visual.name = "Visual"
+	visual.mover = self
+	add_child(visual)
 
 
 static func _mat(c: Color) -> StandardMaterial3D:

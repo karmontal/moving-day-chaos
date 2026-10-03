@@ -4,8 +4,8 @@ extends Node
 const SFX_DIR := "res://assets/audio/sfx/"
 const POOL_SIZE := 12
 ## Minimum seconds between two plays of the same sound, so physics pile-ups do not turn into noise.
-const MIN_INTERVAL := {"thud": 0.06, "grab": 0.04, "release": 0.04, "crash": 0.1, "tick": 0.5}
-const SOUNDS: Array[String] = ["grab", "release", "thud", "crash", "jump", "delivered", "click", "win", "lose", "tick", "error"]
+const MIN_INTERVAL := {"thud": 0.06, "grab": 0.04, "release": 0.04, "crash": 0.1, "tick": 0.5, "boing": 0.08, "oof": 0.3}
+const SOUNDS: Array[String] = ["grab", "release", "thud", "crash", "jump", "delivered", "click", "win", "lose", "tick", "error", "boing", "oof", "hup"]
 
 var _streams := {}
 var _players: Array[AudioStreamPlayer] = []

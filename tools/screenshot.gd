@@ -2,7 +2,7 @@ extends Node
 ## Renders a scene and saves a PNG (needs a display or xvfb, not --headless). Example:
 ##   xvfb-run -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 res://tools/screenshot.tscn -- mission out.png [ar] [seconds]
 ## Scenes: menu, mission (a bot carries furniture), overview (wide shot of the level),
-## sofa (two movers carrying the sofa), results, settings, touch (phone controls over the carry scene).
+## sofa (two movers carrying the sofa), crew (all four movers), results, settings, touch (phone controls over the carry scene).
 
 var _mission: Mission = null
 
@@ -43,6 +43,8 @@ func _ready() -> void:
 					_mission.rig.spring.collision_mask = 0
 				"sofa":
 					await _sofa_scene()
+				"crew":
+					await _crew_scene()
 				"results":
 					await _seconds(1.0)
 					for item in _mission.items.slice(0, 7):
@@ -78,6 +80,28 @@ func _carry_scene() -> void:
 	m.input.move = Vector2(0, -1)
 	await _seconds(1.0)
 	m.input.move = Vector2.ZERO
+
+
+## All four movers lined up on the front path, facing the camera.
+func _crew_scene() -> void:
+	_mission.rig.controls_mover = false
+	_mission.hud.visible = false
+	var movers: Array[Mover] = [_mission.movers[0]]
+	for i in 3:
+		movers.append(_mission.spawn_mover(Vector3.ZERO))
+	for i in 4:
+		movers[i].spawn_at(Vector3(-1.0 + i * 1.15, 0, 2.6), 0.0)
+		movers[i].input.yaw = 0.0
+		movers[i].input.pitch = -0.4
+	_mission.rig.set_process(false)
+	_mission.rig.global_position = Vector3(0.72, 1.1, 2.6)
+	_mission.rig.rotation = Vector3(-0.12, PI, 0)
+	_mission.rig.spring.spring_length = 4.4
+	await _seconds(0.5)
+	# One waves its arms, one jumps, to show off the silliness.
+	movers[1].input.grab = [true, false]
+	movers[1].input.pitch = 0.3
+	movers[3].input.jump = true
 
 
 func _sofa_scene() -> void:

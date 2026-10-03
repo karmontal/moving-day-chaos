@@ -48,6 +48,7 @@ friends' "help".
 |---|---|
 | ![Overview](docs/screenshots/01_overview.jpg) | ![Carrying](docs/screenshots/02_carry.jpg) |
 | ![Sofa](docs/screenshots/03_sofa.jpg) | ![Results](docs/screenshots/04_results_ar.jpg) |
+| ![Crew](docs/screenshots/05_crew.jpg) | |
 
 **الاختبارات / Tests:** `godot --headless --path . res://tests/test_runner.tscn`
 **الصور / Screenshots:** `xvfb-run -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 res://tools/screenshot.tscn -- mission out.png`
