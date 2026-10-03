@@ -40,6 +40,11 @@ friends' "help".
 التحكم باللمس: اليسار للحركة، اسحب في اليمين لتنظر وترفع/تنزل الأيدي، وأزرار **امسك / يسرى / يمنى** تشتغل بالضغط مرة للمسك ومرة للإفلات.
 > النسخة موقّعة بمفتاح تجريبي (`tools/android/debug.keystore`). قبل Google Play لازم مفتاح رفع خاص يُحفظ في Secrets.
 
+**👥 أونلاين (المرحلة 2 — بدأت):** من القائمة ← **العب أونلاين** ← واحد يفتح غرفة والباقي يشوفونها تلقائياً
+لو على نفس الواي فاي (أو يدخلوا بالـ IP اللي يظهر عند المضيف). كل لاعب يختار شخصية (ما تتكرر)، والمضيف يبدأ.
+المضيف يشغّل الفيزياء كلها ويبعث لقطات ~30 مرة بالثانية؛ الباقي يبعثون حركتهم فقط. شغّال بين الكمبيوتر والأندرويد.
+اختبار آلي: `tools/net_test.sh` يشغّل مضيف ولاعب على نفس الجهاز ويتأكد إن الحركة توصل للطرفين.
+
 - كل يد لها قوة محدودة: الكنبة (70 كغ) تحتاج **لاعبين**؛ لما تلعب لوحدك يديك أقوى ×1.75 (`data/game.json` → `solo_strength`).
 - القطع الهشة (التلفزيون، الأباجورة، النبتة) تنكسر من أول ضربة قوية؛ الكراتين والكراسي "تنبعج" وتقل قيمتها.
 - القطعة تنحسب محمّلة لما تستقر داخل الشاحنة (المنطقة الصفراء). الكنبة ما تطلع من الباب الأمامي إلا إذا لفّيتها.
@@ -48,7 +53,8 @@ friends' "help".
 |---|---|
 | ![Overview](docs/screenshots/01_overview.jpg) | ![Carrying](docs/screenshots/02_carry.jpg) |
 | ![Sofa](docs/screenshots/03_sofa.jpg) | ![Results](docs/screenshots/04_results_ar.jpg) |
-| ![Crew](docs/screenshots/05_crew.jpg) | |
+| ![Crew](docs/screenshots/05_crew.jpg) | ![Select](docs/screenshots/06_select.jpg) |
+| ![Lobby](docs/screenshots/07_lobby_ar.jpg) | |
 
 **الاختبارات / Tests:** `godot --headless --path . res://tests/test_runner.tscn`
 **الصور / Screenshots:** `xvfb-run -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 res://tools/screenshot.tscn -- mission out.png`

@@ -126,7 +126,7 @@ func _physics_process(_delta: float) -> void:
 		inp.grab = [touch.grab[0], touch.grab[1]]
 		inp.jump = touch.jump
 		inp.rotate = touch.rotate
-		touch.holding = [target.hands[0].held != null, target.hands[1].held != null]
+		touch.holding = [target.is_holding(0), target.is_holding(1)]
 		return
 	inp.move = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var both := Input.is_action_pressed("grab_both")

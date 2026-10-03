@@ -58,3 +58,17 @@ tests/             headless tests
 - **Performance:** 4 movers + 40 active bodies ≥ 60 FPS on Steam Deck class hardware.
 - **Lessons carried over from previous projects:** audio buses defined in `default_bus_layout.tres` (never created at
   runtime); data loaded in `_init`; textures used in `_draw` cached.
+
+
+## Implementation status (Phase 2 start)
+
+- `scripts/autoload/net.gd` (`Net`): ENet host/join on port 7777, LAN discovery by UDP broadcast on
+  7778, player list `{peer_id: {name, character}}` with unique characters enforced by the host.
+- `Mission` online mode: movers spawned per peer in `Net.peer_order()` (same order everywhere);
+  clients make every mover/item a frozen puppet, send `MoverInput.to_dict()` each tick
+  (`_send_input`, unreliable ordered) and smooth towards 30 Hz `PackedFloat32Array` snapshots
+  (`_snapshot`: per mover 18 floats, per item 10). Breakage and deliveries ride in the snapshot;
+  the result comes as a reliable `_net_finished`.
+- Not yet: Steam transport (SteamMultiplayerPeer), joining mid-job, client-side prediction for the
+  local mover (input delay = round trip; fine on LAN), host migration.
+- Test: `tools/net_test.sh` runs a host and a client process over localhost (also in CI).

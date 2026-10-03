@@ -186,5 +186,125 @@
   "TOUCH_JUMP": {
     "en": "JUMP",
     "ar": "اقفز"
+  },
+  "BTN_ONLINE": {
+    "en": "Play online",
+    "ar": "العب أونلاين"
+  },
+  "BTN_BACK": {
+    "en": "Back",
+    "ar": "رجوع"
+  },
+  "BTN_GO": {
+    "en": "Let's move!",
+    "ar": "يلا نشتغل!"
+  },
+  "SELECT_TITLE": {
+    "en": "Pick your mover",
+    "ar": "اختر عاملك"
+  },
+  "CHAR_STRETCH": {
+    "en": "Stretch",
+    "ar": "ستريتش"
+  },
+  "CHAR_BEAN": {
+    "en": "Bean",
+    "ar": "بين"
+  },
+  "CHAR_TANK": {
+    "en": "Tank",
+    "ar": "تانك"
+  },
+  "CHAR_ZOOM": {
+    "en": "Zoom",
+    "ar": "زوم"
+  },
+  "CHAR_STRETCH_DESC": {
+    "en": "Tall, thin, mostly elbows",
+    "ar": "طويل ونحيف وكله أكواع"
+  },
+  "CHAR_BEAN_DESC": {
+    "en": "Small, round, bouncy",
+    "ar": "صغير ومدوّر ونطّاط"
+  },
+  "CHAR_TANK_DESC": {
+    "en": "Big, strong, wears a helmet",
+    "ar": "عريض وقوي وبخوذة"
+  },
+  "CHAR_ZOOM_DESC": {
+    "en": "Tiny, quick, chaotic",
+    "ar": "صغير وسريع وفوضوي"
+  },
+  "LOBBY_TITLE": {
+    "en": "Play online",
+    "ar": "اللعب أونلاين"
+  },
+  "LOBBY_NAME": {
+    "en": "Your name",
+    "ar": "اسمك"
+  },
+  "LOBBY_HOST": {
+    "en": "Host a game",
+    "ar": "افتح غرفة"
+  },
+  "LOBBY_FOUND": {
+    "en": "Games on your Wi-Fi:",
+    "ar": "ألعاب على نفس الواي فاي:"
+  },
+  "LOBBY_SEARCHING": {
+    "en": "Searching…",
+    "ar": "جاري البحث…"
+  },
+  "LOBBY_JOIN_IP": {
+    "en": "Join IP",
+    "ar": "ادخل بالـ IP"
+  },
+  "LOBBY_PICK": {
+    "en": "Pick your mover",
+    "ar": "اختر عاملك"
+  },
+  "LOBBY_START": {
+    "en": "Start the job",
+    "ar": "ابدأ الشغل"
+  },
+  "LOBBY_LEAVE": {
+    "en": "Leave",
+    "ar": "اطلع"
+  },
+  "LOBBY_HOST_TAG": {
+    "en": "(host)",
+    "ar": "(المضيف)"
+  },
+  "LOBBY_YOU_TAG": {
+    "en": " ← you",
+    "ar": " ← أنت"
+  },
+  "LOBBY_HOST_INFO": {
+    "en": "Friends on the same Wi-Fi see\nyour game, or join: %s",
+    "ar": "أصحابك على نفس الواي فاي بيشوفوا\nغرفتك، أو يدخلوا بـ: %s"
+  },
+  "LOBBY_WAITING": {
+    "en": "Waiting for the host to start…",
+    "ar": "بانتظار المضيف يبدأ…"
+  },
+  "NET_FAILED": {
+    "en": "Could not connect.",
+    "ar": "ما قدرنا نتصل."
+  },
+  "NET_HOST_LEFT": {
+    "en": "The host left the game.",
+    "ar": "المضيف طلع من اللعبة."
+  },
+  "NET_HOST_FAILED": {
+    "en": "Could not host (error %d).",
+    "ar": "ما قدرنا نفتح الغرفة (خطأ %d)."
+  },
+  "NET_CONNECTING": {
+    "en": "Connecting…",
+    "ar": "جاري الاتصال…"
+  },
+  "LOBBY_WAITING_RETRY": {
+    "en": "The host can start the job again.",
+    "ar": "المضيف بيقدر يعيد المهمة."
   }
 }

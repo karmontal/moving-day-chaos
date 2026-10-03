@@ -8,11 +8,19 @@ signal grabbed(item: Grabbable)
 signal jumped
 
 const LAYER_MOVERS := 3
-const ARM_RADIUS := 0.055
+const ARM_RADIUS := 0.072
 const HAND_RESET_DISTANCE := 2.2
 
 var input := MoverInput.new()
 var color_index := 0
+## Network owner of this mover (1 = host / offline).
+var peer_id := 1
+## On clients every mover is a puppet: the host simulates it and snapshots move it.
+var puppet := false
+## Velocity reported by the host for puppets (drives the silly animation).
+var net_velocity := Vector3.ZERO
+## Puppets: which hands the host says are holding something (for the touch buttons / HUD).
+var remote_holding: Array[bool] = [false, false]
 ## Multiplies hand strength (solo play gets a boost, see data/game.json "solo_strength").
 var strength := 1.0:
 	set(v):
@@ -32,6 +40,7 @@ var _arms: Array[MeshInstance3D] = []
 var _jump_cooldown := 0.0
 var _jump_held := false
 var _prev_velocity := Vector3.ZERO
+var _visual: MoverVisual = null
 
 
 func _init() -> void:
@@ -93,6 +102,20 @@ func spawn_at(feet: Vector3, facing_yaw := 0.0) -> void:
 		h.teleport(_rest_target(h.side))
 
 
+## Turns this mover into a snapshot-driven puppet (network clients).
+func make_puppet() -> void:
+	puppet = true
+	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	freeze = true
+	for h in hands:
+		h.freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+		h.freeze = true
+
+
+func visual_velocity() -> Vector3:
+	return net_velocity if puppet else linear_velocity
+
+
 func shoulder(side: int) -> Vector3:
 	var o := Data.vec3(_cfg.shoulder_offset)
 	return global_position + global_basis * Vector3(o.x * side, o.y, o.z)
@@ -106,6 +129,10 @@ func aim_offset() -> Vector3:
 	return Basis(Vector3.UP, input.yaw) * Vector3(0.0, p * float(_hand_cfg.lift_range), -fwd)
 
 
+func is_holding(i: int) -> bool:
+	return remote_holding[i] if puppet else hands[i].held != null
+
+
 func held_items() -> Array[Grabbable]:
 	var out: Array[Grabbable] = []
 	for h in hands:
@@ -115,6 +142,9 @@ func held_items() -> Array[Grabbable]:
 
 
 func _physics_process(delta: float) -> void:
+	if puppet:
+		_update_arms()
+		return
 	_check_floor()
 	_check_stumble(delta)
 	_walk(delta)
@@ -216,7 +246,9 @@ func _rest_target(side: int) -> Vector3:
 
 func _update_arms() -> void:
 	for i in hands.size():
-		var a := shoulder(hands[i].side)
+		# Start at the character model's shoulder when there is one, so the noodle arm is
+		# attached to the body (the model's own arms are folded away, see MoverVisual).
+		var a := _visual.shoulder_world(hands[i].side) if _visual else shoulder(hands[i].side)
 		var b := hands[i].global_position
 		var d := b - a
 		var length := maxf(d.length(), 0.01)
@@ -227,10 +259,10 @@ func _update_arms() -> void:
 
 
 func _build_visuals() -> void:
-	var visual := MoverVisual.new()
-	visual.name = "Visual"
-	visual.mover = self
-	add_child(visual)
+	_visual = MoverVisual.new()
+	_visual.name = "Visual"
+	_visual.mover = self
+	add_child(_visual)
 
 
 static func _mat(c: Color) -> StandardMaterial3D:

@@ -1,7 +1,7 @@
 extends Node
 ## Renders a scene and saves a PNG (needs a display or xvfb, not --headless). Example:
 ##   xvfb-run -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 res://tools/screenshot.tscn -- mission out.png [ar] [seconds]
-## Scenes: menu, mission (a bot carries furniture), overview (wide shot of the level),
+## Scenes: menu, select, lobby, mission (a bot carries furniture), overview (wide shot of the level),
 ## sofa (two movers carrying the sofa), crew (all four movers), results, settings, touch (phone controls over the carry scene).
 
 var _mission: Mission = null
@@ -16,7 +16,17 @@ func _ready() -> void:
 		Settings.changed.emit()
 	var seconds := float(args[3]) if args.size() > 3 else 4.0
 	get_window().size = Vector2i(1920, 1080)
+	Settings.character = 0
 	match which:
+		"select":
+			add_child(load("res://scenes/character_select.tscn").instantiate())
+			await _frames(30)
+		"lobby":
+			Net.host()
+			Net.players[2] = {"name": "Karam", "character": 2}
+			Net.players[3] = {"name": "Sami", "character": 3}
+			add_child(load("res://scenes/lobby.tscn").instantiate())
+			await _frames(30)
 		"menu", "settings":
 			var menu: Node = load("res://scenes/main_menu.tscn").instantiate()
 			add_child(menu)

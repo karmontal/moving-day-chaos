@@ -97,6 +97,7 @@ func _ready() -> void:
 	mission.item_delivered.connect(func(item: Grabbable) -> void: _float_text(item, "+$%d" % roundi(item.current_value()), Palette.HIVIS))
 	mission.item_broken.connect(func(item: Grabbable) -> void: _float_text(item, tr("HUD_BROKEN"), Palette.DANGER))
 	mission.finished.connect(_show_results)
+	Net.session_ended.connect(_on_session_ended)
 
 
 func _process(_delta: float) -> void:
@@ -116,12 +117,11 @@ func _process(_delta: float) -> void:
 			color = Palette.GREEN
 		l.text = "•  %s%s" % [tr("ITEM_" + item.item_id.to_upper()), suffix]
 		l.add_theme_color_override("font_color", color)
-	var player := mission.movers[0] if not mission.movers.is_empty() else null
-	if player:
+	var player := mission.local_mover
+	if player and is_instance_valid(player):
 		for i in 2:
-			var h := player.hands[i]
 			var reaching := player.input.grab[i]
-			var c := Palette.HIVIS if h.held else (Palette.CREAM if reaching else Color(Palette.CREAM, 0.35))
+			var c := Palette.HIVIS if player.is_holding(i) else (Palette.CREAM if reaching else Color(Palette.CREAM, 0.35))
 			_hands[i].add_theme_stylebox_override("panel", UITheme.box(c, 30, 4))
 
 
@@ -148,11 +148,13 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _open_pause() -> void:
-	get_tree().paused = true
+	# Online the job keeps running for everyone else; only the menu opens.
+	get_tree().paused = not mission.networked
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_popup = Modal.open(_root, "PAUSE_TITLE")
 	_popup.add_button("BTN_RESUME", func() -> void: pass)
-	_popup.add_button("BTN_RESTART", _restart)
+	if not mission.is_client:
+		_popup.add_button("BTN_RESTART", _restart)
 	_popup.add_button("SET_TITLE", func() -> void: SettingsPanel.open(_root), false)
 	_popup.add_button("BTN_MENU", _to_menu)
 	_popup.closed.connect(func() -> void:
@@ -173,7 +175,10 @@ func _show_results(r: Dictionary) -> void:
 	if r.bonus > 0:
 		_popup.add_text(tr("RES_BONUS") % r.bonus)
 	_popup.add_text(tr("RES_MONEY") % r.money, 52)
-	_popup.add_button("BTN_RETRY", _restart)
+	if mission.is_client:
+		_popup.add_text(tr("LOBBY_WAITING_RETRY"), 30)
+	else:
+		_popup.add_button("BTN_RETRY", _restart)
 	_popup.add_button("BTN_MENU", _to_menu)
 	# Results stay up: closing with Esc would leave a frozen job behind.
 	_popup.set_process_unhandled_input(false)
@@ -181,13 +186,27 @@ func _show_results(r: Dictionary) -> void:
 
 func _restart() -> void:
 	get_tree().paused = false
-	get_tree().reload_current_scene()
+	if mission.networked:
+		Net.start_game(mission.mission_id)  # reloads the job for everyone
+	else:
+		get_tree().reload_current_scene()
 
 
 func _to_menu() -> void:
 	get_tree().paused = false
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
-	get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+	if mission.networked:
+		Net.leave()
+		get_tree().change_scene_to_file("res://scenes/lobby.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/main_menu.tscn")
+
+
+func _on_session_ended(reason: String) -> void:
+	get_tree().paused = false
+	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
+	Net.last_error = reason
+	get_tree().change_scene_to_file.call_deferred("res://scenes/lobby.tscn")
 
 
 func _float_text(item: Grabbable, text: String, color: Color) -> void:

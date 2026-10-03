@@ -29,6 +29,17 @@ var delivered := {}  # Grabbable -> true
 var _settle := {}  # Grabbable -> seconds spent resting inside the truck
 var _last_tick := -1
 
+# --- Online (host-authoritative, see docs/TECH_DESIGN.md) ---
+const SNAPSHOT_EVERY := 2  # physics ticks between snapshots (30 Hz)
+const MOVER_FIELDS := 18
+const ITEM_FIELDS := 10
+## True while playing online; `is_client` when this machine only mirrors the host.
+var networked := false
+var is_client := false
+var local_mover: Mover = null
+var _tick := 0
+var _targets := {}  # Node3D -> Transform3D from the latest snapshot (clients)
+
 
 func _ready() -> void:
 	data = Data.mission(mission_id)
@@ -37,13 +48,33 @@ func _ready() -> void:
 	for entry: Dictionary in data.items:
 		_spawn_item(entry)
 	var spawn := Vector3(data.spawn[0], 0.0, data.spawn[1])
-	var player := spawn_mover(spawn)
+	networked = Net.active and Net.in_game
+	is_client = networked and not Net.is_host()
+	var player: Mover
+	if networked:
+		player_count = Net.players.size()
+		var order := Net.peer_order()
+		for i in order.size():
+			var id: int = order[i]
+			var m := spawn_mover(spawn + Vector3((i - (order.size() - 1) * 0.5) * 1.1, 0, 0), int(Net.players[id].character), id)
+			if id == Net.my_id():
+				player = m
+		if is_client:
+			for m in movers:
+				m.make_puppet()
+			for item in items:
+				item.make_puppet()
+		Net.players_changed.connect(_on_players_changed)
+	else:
+		player = spawn_mover(spawn, Settings.character)
+	local_mover = player
+	for m in movers:
+		m.input.yaw = PI
+		m.rotation.y = PI
 	if local_player:
 		rig = PlayerRig.new()
 		rig.target = player
 		rig.yaw = PI  # face into the house
-		player.input.yaw = PI
-		player.rotation.y = PI
 		add_child(rig)
 		hud = Hud.new()
 		hud.mission = self
@@ -52,9 +83,11 @@ func _ready() -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-func spawn_mover(feet: Vector3) -> Mover:
+## character < 0 picks the next free colour; peer is the network owner (1 offline).
+func spawn_mover(feet: Vector3, character := -1, peer := 1) -> Mover:
 	var m := Mover.new()
-	m.color_index = movers.size() % Palette.PLAYER_COLORS.size()
+	m.color_index = (character if character >= 0 else movers.size()) % Palette.PLAYER_COLORS.size()
+	m.peer_id = peer
 	m.name = "Mover%d" % movers.size()
 	add_child(m)
 	m.spawn_at(feet)
@@ -93,19 +126,32 @@ func _add_tag(item: Grabbable) -> void:
 
 
 func _physics_process(delta: float) -> void:
+	if is_client:
+		if local_mover and not is_finished:
+			_send_input.rpc_id(1, local_mover.input.to_dict())
+		_tick_sound()
+		return
 	if is_finished:
 		return
 	elapsed += delta
 	time_left = maxf(0.0, time_left - delta)
-	var secs := int(ceil(time_left))
-	if secs <= 10 and secs != _last_tick and secs > 0:
-		_last_tick = secs
-		AudioManager.play("tick")
+	_tick_sound()
 	_update_deliveries(delta)
+	if networked:
+		_tick += 1
+		if _tick % SNAPSHOT_EVERY == 0:
+			_snapshot.rpc(_encode_snapshot())
 	if time_left <= 0.0:
 		finish()
 	elif _all_handled():
 		finish()
+
+
+func _tick_sound() -> void:
+	var secs := int(ceil(time_left))
+	if secs <= 10 and secs != _last_tick and secs > 0 and not is_finished:
+		_last_tick = secs
+		AudioManager.play("tick")
 
 
 func _update_deliveries(delta: float) -> void:
@@ -205,4 +251,106 @@ func finish() -> void:
 	AudioManager.play("win" if r.stars > 0 else "lose")
 	if rig:
 		rig.active = false
+	if networked and not is_client:
+		_net_finished.rpc(r)
 	finished.emit(r)
+
+
+# ---------------------------------------------------------------- online
+
+@rpc("any_peer", "unreliable_ordered")
+func _send_input(d: Dictionary) -> void:
+	var sender := multiplayer.get_remote_sender_id()
+	for m in movers:
+		if m.peer_id == sender:
+			m.input.from_dict(d)
+			return
+
+
+func _encode_snapshot() -> PackedFloat32Array:
+	var out := PackedFloat32Array()
+	out.append(time_left)
+	for m in movers:
+		var p := m.global_position
+		var v := m.linear_velocity
+		var l := m.hands[0].global_position
+		var r := m.hands[1].global_position
+		out.append_array([p.x, p.y, p.z, m.rotation.y, v.x, v.y, v.z, 1.0 if m.on_floor else 0.0,
+			m.walk_phase, m.dizzy_time, l.x, l.y, l.z, r.x, r.y, r.z,
+			1.0 if m.hands[0].held else 0.0, 1.0 if m.hands[1].held else 0.0])
+	for item in items:
+		var p := item.global_position
+		var q := item.global_basis.get_rotation_quaternion()
+		out.append_array([p.x, p.y, p.z, q.x, q.y, q.z, q.w, item.condition,
+			1.0 if item.broken else 0.0, 1.0 if delivered.has(item) else 0.0])
+	return out
+
+
+@rpc("authority", "unreliable_ordered")
+func _snapshot(d: PackedFloat32Array) -> void:
+	if d.size() != 1 + movers.size() * MOVER_FIELDS + items.size() * ITEM_FIELDS:
+		return  # a player just left; the next snapshot matches again
+	time_left = d[0]
+	var k := 1
+	for m in movers:
+		_targets[m] = Transform3D(Basis(Vector3.UP, d[k + 3]), Vector3(d[k], d[k + 1], d[k + 2]))
+		m.net_velocity = Vector3(d[k + 4], d[k + 5], d[k + 6])
+		m.on_floor = d[k + 7] > 0.5
+		m.walk_phase = d[k + 8]
+		m.dizzy_time = d[k + 9]
+		_targets[m.hands[0]] = Transform3D(Basis(), Vector3(d[k + 10], d[k + 11], d[k + 12]))
+		_targets[m.hands[1]] = Transform3D(Basis(), Vector3(d[k + 13], d[k + 14], d[k + 15]))
+		m.remote_holding = [d[k + 16] > 0.5, d[k + 17] > 0.5]
+		k += MOVER_FIELDS
+	for item in items:
+		_targets[item] = Transform3D(Basis(Quaternion(d[k + 3], d[k + 4], d[k + 5], d[k + 6]).normalized()), Vector3(d[k], d[k + 1], d[k + 2]))
+		item.condition = d[k + 7]
+		if d[k + 8] > 0.5 and not item.broken:
+			item.break_apart()
+		var is_delivered := d[k + 9] > 0.5
+		if is_delivered and not delivered.has(item):
+			delivered[item] = true
+			_set_tag_visible(item, false)
+			item_delivered.emit(item)
+			AudioManager.play("delivered", 0.05)
+		elif not is_delivered and delivered.has(item):
+			delivered.erase(item)
+			_set_tag_visible(item, true)
+			item_unloaded.emit(item)
+		k += ITEM_FIELDS
+
+
+func _process(delta: float) -> void:
+	if not is_client:
+		return
+	# Smoothly chase the latest snapshot (30 Hz in, 60+ fps out).
+	var t := 1.0 - exp(-18.0 * delta)
+	for node: Node3D in _targets:
+		if not is_instance_valid(node):
+			continue
+		var goal: Transform3D = _targets[node]
+		var cur := node.global_transform
+		if cur.origin.distance_to(goal.origin) > 3.0:
+			node.global_transform = goal  # teleport (respawn, first snapshot)
+			continue
+		var q := cur.basis.get_rotation_quaternion().slerp(goal.basis.get_rotation_quaternion(), t)
+		node.global_transform = Transform3D(Basis(q), cur.origin.lerp(goal.origin, t))
+
+
+@rpc("authority", "reliable")
+func _net_finished(r: Dictionary) -> void:
+	if is_finished:
+		return
+	is_finished = true
+	AudioManager.play("win" if r.stars > 0 else "lose")
+	if rig:
+		rig.active = false
+	finished.emit(r)
+
+
+func _on_players_changed() -> void:
+	for m in movers.duplicate():
+		if not Net.players.has(m.peer_id):
+			movers.erase(m)
+			_targets.erase(m)
+			m.queue_free()

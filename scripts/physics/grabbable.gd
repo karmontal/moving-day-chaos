@@ -19,6 +19,8 @@ var condition := 1.0
 var broken := false
 ## Number of hands currently holding this item.
 var holders := 0
+## Network clients: the host simulates the item, snapshots move it.
+var puppet := false
 
 var _prev_velocity := Vector3.ZERO
 var _age := 0.0
@@ -56,6 +58,12 @@ func setup(id: String) -> void:
 
 
 ## Distance from the origin to the lowest point, so spawners can rest the item on a floor.
+func make_puppet() -> void:
+	puppet = true
+	freeze_mode = RigidBody3D.FREEZE_MODE_KINEMATIC
+	freeze = true
+
+
 func bottom_offset() -> float:
 	return _bottom
 
@@ -133,7 +141,7 @@ func _physics_process(delta: float) -> void:
 	var v := linear_velocity
 	var dv := (v - _prev_velocity).length()
 	_prev_velocity = v
-	if broken or _age < float(Data.game.damage.spawn_grace):
+	if puppet or broken or _age < float(Data.game.damage.spawn_grace):
 		return
 	# Gravity alone changes velocity by g*dt per step; real impacts are far larger.
 	if dv > toughness and get_contact_count() > 0:

@@ -15,12 +15,17 @@ var vibration := true
 var floating_text := true
 ## Show value popups when furniture is delivered or damaged.
 var mouse_sensitivity := 1.0
+## Chosen crew member (0-3, see Palette.PLAYER_COLORS / assets/models/mover_<n>.glb).
+var character := 0
+var player_name := ""
 var invert_y := false
 
 
 func _ready() -> void:
 	_register_input_actions()
 	load_settings()
+	if player_name == "":
+		player_name = "Mover %d" % (randi() % 900 + 100)
 	apply()
 
 
@@ -37,6 +42,8 @@ func load_settings() -> void:
 	vibration = cfg.get_value("game", "vibration", vibration)
 	floating_text = cfg.get_value("game", "floating_text", floating_text)
 	mouse_sensitivity = cfg.get_value("controls", "mouse_sensitivity", mouse_sensitivity)
+	character = cfg.get_value("game", "character", character)
+	player_name = cfg.get_value("game", "player_name", player_name)
 	invert_y = cfg.get_value("controls", "invert_y", invert_y)
 
 
@@ -51,6 +58,8 @@ func save_settings() -> void:
 	cfg.set_value("game", "vibration", vibration)
 	cfg.set_value("game", "floating_text", floating_text)
 	cfg.set_value("controls", "mouse_sensitivity", mouse_sensitivity)
+	cfg.set_value("game", "character", character)
+	cfg.set_value("game", "player_name", player_name)
 	cfg.set_value("controls", "invert_y", invert_y)
 	cfg.save(PATH)
 

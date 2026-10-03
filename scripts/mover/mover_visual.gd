@@ -6,6 +6,12 @@ extends Node3D
 ## (assets/models/mover_<n>.glb) when one exists, otherwise primitive shapes.
 
 const MODEL_PATH := "res://assets/models/mover_%d.glb"
+## Shared idle clip (same Meshy skeleton for every crew member).
+const IDLE_PATH := "res://assets/models/anim_idle.glb"
+## The walk clip covers about this many metres per second at speed 1.
+const WALK_CLIP_SPEED := 1.25
+## Arm bones stay out of the clips: the physics noodle arms do the arm work.
+const ARM_BONES := ["LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand", "RightShoulder", "RightArm", "RightForeArm", "RightHand"]
 
 var mover: Mover
 
@@ -30,6 +36,12 @@ var _time := 0.0
 var _head_base := Vector3.ZERO
 var _h := 1.55
 var _r := 0.34
+var _anim: AnimationPlayer = null
+var _walk_clip := ""
+var _skeleton: Skeleton3D = null
+var _head_bone := -1
+var _head_rest := Quaternion.IDENTITY
+var _arm_bones: Array[int] = [-1, -1]  # LeftArm, RightArm (upper arms)
 
 
 func _ready() -> void:
@@ -53,7 +65,7 @@ func _process(delta: float) -> void:
 	if delta <= 0.0:
 		return
 	var basis_inv := mover.global_basis.inverse()
-	var v := mover.linear_velocity
+	var v := mover.visual_velocity()
 	var local_a := basis_inv * ((v - _prev_vel) / delta)
 	_prev_vel = v
 	# Springs are integrated in small fixed steps: one long frame (a slow phone, a hitch)
@@ -65,8 +77,9 @@ func _process(delta: float) -> void:
 
 func _step(delta: float, local_v: Vector3, local_a: Vector3) -> void:
 	_time += delta
-	var v := mover.linear_velocity
+	var v := mover.visual_velocity()
 	var hspeed := Vector2(local_v.x, local_v.z).length()
+	_process_anim(hspeed)
 	var waddle := clampf(hspeed / 4.0, 0.0, 1.0) * (1.0 if mover.on_floor else 0.3)
 	var phase := mover.walk_phase
 
@@ -114,9 +127,42 @@ func _step(delta: float, local_v: Vector3, local_a: Vector3) -> void:
 		var s := sin(phase + PI * i)
 		_feet[i].position = Vector3((-0.13 if i == 0 else 0.13), 0.05 + maxf(0.0, s) * 0.09 * waddle, -s * 0.16 * waddle)
 
+	if _skeleton:
+		# Fold the model's own arms (modelled behind its back) away into the shoulders;
+		# the physics noodle arms replace them.
+		for b in _arm_bones:
+			if b >= 0:
+				_skeleton.set_bone_pose_scale(b, Vector3.ONE * 0.001)
+	if _skeleton and _head_bone >= 0:
+		# Bobblehead on the rigged model's head bone.
+		var wobble := Quaternion(Vector3.RIGHT, _head_off.z * 3.0) * Quaternion(Vector3.FORWARD, _head_off.x * 3.5)
+		_skeleton.set_bone_pose_rotation(_head_bone, _head_rest * wobble)
 	_stars.visible = mover.dizzy_time > 0.0
 	if _stars.visible:
 		_stars.rotation.y = _time * 6.0
+
+
+## Where a noodle arm should start: the model's shoulder joint, or the capsule's shoulder.
+func shoulder_world(side: int) -> Vector3:
+	var b := _arm_bones[0 if side < 0 else 1]
+	if _skeleton and b >= 0:
+		return _skeleton.global_transform * _skeleton.get_bone_global_pose(b).origin
+	return mover.shoulder(side)
+
+
+func _process_anim(hspeed: float) -> void:
+	if _anim == null or _walk_clip == "":
+		return
+	if hspeed > 0.25 and mover.on_floor:
+		if _anim.current_animation != _walk_clip:
+			_anim.play(_walk_clip, 0.15)
+		_anim.speed_scale = clampf(hspeed / WALK_CLIP_SPEED, 0.6, 3.2)
+	elif _anim.has_animation("idle"):
+		if _anim.current_animation != "idle":
+			_anim.play("idle", 0.25)
+		_anim.speed_scale = 1.0
+	else:
+		_anim.speed_scale = 0.0
 
 
 func _build_model(scene: PackedScene) -> void:
@@ -130,6 +176,35 @@ func _build_model(scene: PackedScene) -> void:
 	_body.add_child(model)
 	_head_base = Vector3(0, _h, 0)
 	_body.add_child(_head)
+	_setup_animation(model)
+
+
+func _setup_animation(model: Node) -> void:
+	var players := model.find_children("*", "AnimationPlayer", true, false)
+	if players.is_empty():
+		return
+	_anim = players[0]
+	var skeletons := model.find_children("*", "Skeleton3D", true, false)
+	if not skeletons.is_empty():
+		_skeleton = skeletons[0]
+		_head_bone = _skeleton.find_bone("Head")
+		_arm_bones = [_skeleton.find_bone("LeftArm"), _skeleton.find_bone("RightArm")]
+		if _head_bone >= 0:
+			_head_rest = _skeleton.get_bone_rest(_head_bone).basis.get_rotation_quaternion()
+	for anim_name in _anim.get_animation_list():
+		if anim_name.to_lower().contains("walk"):
+			_walk_clip = anim_name
+	if ResourceLoader.exists(IDLE_PATH):
+		_add_shared_idle()
+	for anim_name in _anim.get_animation_list():
+		var a := _anim.get_animation(anim_name)
+		a.loop_mode = Animation.LOOP_LINEAR
+		for t in range(a.get_track_count() - 1, -1, -1):
+			var path := String(a.track_get_path(t))
+			var bone := path.get_slice(":", 1)
+			if bone in ARM_BONES:
+				a.remove_track(t)
+	_process_anim(0.0)
 
 
 func _build_primitives(color: Color) -> void:
@@ -191,13 +266,55 @@ func _build_stars() -> void:
 	_stars.visible = false
 
 
+## Copies the idle clip from anim_idle.glb, retargeted to this skeleton: every rotation key is
+## re-expressed relative to the source rest pose and applied on top of ours (the crew members
+## were rigged separately, so their rest poses differ slightly). Bone travel is dropped.
+func _add_shared_idle() -> void:
+	var idle_scene: Node = (load(IDLE_PATH) as PackedScene).instantiate()
+	var players := idle_scene.find_children("*", "AnimationPlayer", true, false)
+	var skels := idle_scene.find_children("*", "Skeleton3D", true, false)
+	if players.is_empty() or skels.is_empty() or _skeleton == null:
+		idle_scene.free()
+		return
+	var src_player: AnimationPlayer = players[0]
+	var src_skel: Skeleton3D = skels[0]
+	var list := src_player.get_animation_list()
+	if list.is_empty():
+		idle_scene.free()
+		return
+	var a := src_player.get_animation(list[0]).duplicate(true) as Animation
+	for t in range(a.get_track_count() - 1, -1, -1):
+		var bone := String(a.track_get_path(t)).get_slice(":", 1)
+		var src_bone := src_skel.find_bone(bone)
+		var dst_bone := _skeleton.find_bone(bone)
+		if a.track_get_type(t) != Animation.TYPE_ROTATION_3D or src_bone < 0 or dst_bone < 0:
+			a.remove_track(t)
+			continue
+		var src_rest := src_skel.get_bone_rest(src_bone).basis.get_rotation_quaternion()
+		var dst_rest := _skeleton.get_bone_rest(dst_bone).basis.get_rotation_quaternion()
+		# Meshy's idle stands at a ~40° angle; turn the hips back to face forward.
+		var unturn := Quaternion.IDENTITY
+		if bone == "Hips" and a.track_get_key_count(t) > 0:
+			var yaw := 0.0
+			for k in a.track_get_key_count(t):
+				yaw += Basis(a.track_get_key_value(t, k) as Quaternion).get_euler().y
+			unturn = Quaternion(Vector3.UP, yaw / a.track_get_key_count(t))
+		for k in a.track_get_key_count(t):
+			var q: Quaternion = a.track_get_key_value(t, k)
+			a.track_set_key_value(t, k, unturn * dst_rest * (src_rest.inverse() * q))
+	_anim.get_animation_library("").add_animation("idle", a)
+	idle_scene.free()
+
+
 static func _merged_aabb(root: Node) -> AABB:
 	var out := AABB()
 	var first := true
 	for n in root.find_children("*", "MeshInstance3D", true, false):
 		var mi := n as MeshInstance3D
 		var t := Transform3D()
-		var p: Node = mi
+		# Skinned meshes are placed by their bones, not their node chain (rigged exports
+		# often scale the armature by 0.01 and undo it in the bind poses).
+		var p: Node = mi if mi.skin == null else root
 		while p != root and p is Node3D:
 			t = (p as Node3D).transform * t
 			p = p.get_parent()

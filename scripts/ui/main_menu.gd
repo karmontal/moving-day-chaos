@@ -25,8 +25,8 @@ func _ready() -> void:
 	box.set_anchors_and_offsets_preset(PRESET_CENTER_LEFT)
 	box.offset_left = 120
 	box.offset_right = 760
-	box.offset_top = -330
-	box.offset_bottom = 330
+	box.offset_top = -400
+	box.offset_bottom = 400
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 
 	box.add_child(UITheme.heading("GAME_TITLE", 104, Palette.CREAM))
@@ -36,6 +36,7 @@ func _ready() -> void:
 	spacer.custom_minimum_size.y = 24
 	box.add_child(spacer)
 	_button(box, "BTN_PLAY", _play).grab_focus()
+	_button(box, "BTN_ONLINE", func() -> void: get_tree().change_scene_to_file("res://scenes/lobby.tscn"))
 	_button(box, "SET_TITLE", func() -> void: SettingsPanel.open(self))
 	if not Settings.is_web() and not Settings.is_mobile():
 		_button(box, "BTN_QUIT", func() -> void: get_tree().quit())
@@ -71,4 +72,4 @@ func _button(parent: Node, key: String, action: Callable) -> Button:
 
 
 func _play() -> void:
-	get_tree().change_scene_to_file("res://scenes/mission.tscn")
+	get_tree().change_scene_to_file("res://scenes/character_select.tscn")

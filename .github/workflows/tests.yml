@@ -20,3 +20,5 @@ jobs:
         run: ./godot --headless --path . --import
       - name: Run tests
         run: ./godot --headless --path . res://tests/test_runner.tscn
+      - name: Online smoke test (host + client over localhost)
+        run: tools/net_test.sh ./godot
