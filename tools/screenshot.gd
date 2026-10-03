@@ -2,7 +2,7 @@ extends Node
 ## Renders a scene and saves a PNG (needs a display or xvfb, not --headless). Example:
 ##   xvfb-run -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 res://tools/screenshot.tscn -- mission out.png [ar] [seconds]
 ## Scenes: menu, mission (a bot carries furniture), overview (wide shot of the level),
-## sofa (two movers carrying the sofa), results, settings.
+## sofa (two movers carrying the sofa), results, settings, touch (phone controls over the carry scene).
 
 var _mission: Mission = null
 
@@ -25,6 +25,8 @@ func _ready() -> void:
 				SettingsPanel.open(menu)
 			await _frames(20)
 		_:
+			if which == "touch":
+				Engine.set_meta("force_touch", true)
 			_mission = load("res://scenes/mission.tscn").instantiate()
 			if which == "sofa":
 				_mission.player_count = 2

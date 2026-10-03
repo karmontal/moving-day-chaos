@@ -19,6 +19,8 @@ var pitch := -0.55
 var active := true
 ## Off when a script (screenshot bot, replay) drives the mover and the rig is only a camera.
 var controls_mover := true
+## Set by the HUD on touch screens; replaces mouse/keyboard/gamepad input.
+var touch: TouchControls = null
 
 var spring := SpringArm3D.new()
 var camera := Camera3D.new()
@@ -51,7 +53,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var rel: Vector2 = event.relative * MOUSE_SPEED * Settings.mouse_sensitivity
 		yaw -= rel.x
 		pitch = clampf(pitch - rel.y * (-1.0 if Settings.invert_y else 1.0), PITCH_MIN, PITCH_MAX)
-	elif event is InputEventMouseButton and event.pressed and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
+	elif event is InputEventMouseButton and event.pressed and touch == null and Input.mouse_mode != Input.MOUSE_MODE_CAPTURED:
 		# First click only captures the mouse (browsers require a click for pointer lock).
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 		get_viewport().set_input_as_handled()
@@ -64,6 +66,10 @@ func _process(delta: float) -> void:
 		var look := Input.get_vector("look_left", "look_right", "look_up", "look_down")
 		yaw -= look.x * STICK_SPEED * delta
 		pitch = clampf(pitch - look.y * STICK_SPEED * 0.7 * delta * (-1.0 if Settings.invert_y else 1.0), PITCH_MIN, PITCH_MAX)
+		if touch:
+			var drag := touch.take_look() * Settings.mouse_sensitivity
+			yaw -= drag.x
+			pitch = clampf(pitch - drag.y * (-1.0 if Settings.invert_y else 1.0), PITCH_MIN, PITCH_MAX)
 	var goal := target.global_position + Vector3.UP * FOLLOW_HEIGHT
 	global_position = global_position.lerp(goal, 1.0 - exp(-12.0 * delta))
 	rotation = Vector3(minf(pitch, VIEW_PITCH_MAX), yaw, 0.0)
@@ -113,6 +119,14 @@ func _physics_process(_delta: float) -> void:
 		inp.grab = [false, false]
 		inp.jump = false
 		inp.rotate = 0.0
+		return
+	if touch:
+		# Touches also arrive as emulated mouse clicks, so ignore the mouse grab actions here.
+		inp.move = touch.move
+		inp.grab = [touch.grab[0], touch.grab[1]]
+		inp.jump = touch.jump
+		inp.rotate = touch.rotate
+		touch.holding = [target.hands[0].held != null, target.hands[1].held != null]
 		return
 	inp.move = Input.get_vector("move_left", "move_right", "move_up", "move_down")
 	var both := Input.is_action_pressed("grab_both")

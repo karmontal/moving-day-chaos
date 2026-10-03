@@ -1,0 +1,93 @@
+name: Android build
+
+# Exports a signed APK on every push to main (or by hand from the Actions tab) and publishes it
+# as the "android-latest" GitHub Release, so it can be downloaded straight to a phone.
+# Signing uses tools/android/debug.keystore (testing only). Before Google Play, create a private
+# upload keystore and pass it through repository secrets instead.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.7-stable
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}_linux.x86_64" godot
+
+      - name: Cache Android export templates
+        id: templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates
+          key: godot-android-templates-${{ env.GODOT_VERSION }}
+
+      - name: Download Android export templates
+        if: steps.templates.outputs.cache-hit != 'true'
+        run: |
+          dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION/-/.}"
+          mkdir -p "$dir"
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -oq -j templates.tpz "templates/android_*.apk" "templates/version.txt" -d "$dir"
+          ls "$dir"
+          rm templates.tpz
+
+      - name: Point Godot at the Android SDK and Java
+        run: |
+          # GitHub's Ubuntu runners ship the Android SDK ($ANDROID_HOME) and JDK 17.
+          mkdir -p "$HOME/.config/godot"
+          short=$(echo "${GODOT_VERSION%-*}")
+          for name in "editor_settings-4.tres" "editor_settings-${short}.tres"; do
+            cat > "$HOME/.config/godot/$name" <<SETTINGS
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME_17_X64"
+          SETTINGS
+          done
+          cat "$HOME/.config/godot/editor_settings-${short}.tres"
+          ls "$ANDROID_HOME/build-tools"
+
+      - name: Import
+        run: ./godot --headless --path . --import
+
+      - name: Export APK
+        env:
+          GODOT_ANDROID_KEYSTORE_RELEASE_PATH: ${{ github.workspace }}/tools/android/debug.keystore
+          GODOT_ANDROID_KEYSTORE_RELEASE_USER: androiddebugkey
+          GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD: android
+        run: |
+          mkdir -p build
+          VERSION=$(grep '^config/version=' project.godot | cut -d'"' -f2)
+          # Every build gets a higher versionCode so phones accept it as an update.
+          sed -i "s/^version\/code=.*/version\/code=${GITHUB_RUN_NUMBER}/; s/^version\/name=.*/version\/name=\"${VERSION}\"/" export_presets.cfg
+          ./godot --headless --path . --export-release "Android" build/moving-day-chaos.apk
+          test -f build/moving-day-chaos.apk
+          ls -lh build/
+          "$ANDROID_HOME/build-tools/$(ls "$ANDROID_HOME/build-tools" | sort -V | tail -1)/apksigner" verify --print-certs build/moving-day-chaos.apk | head -3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moving-day-chaos-android
+          path: build/moving-day-chaos.apk
+
+      - name: Publish as the "android-latest" release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          VERSION=$(grep '^config/version=' project.godot | cut -d'"' -f2)
+          NOTES="Test build v${VERSION} (build ${GITHUB_RUN_NUMBER}, ${GITHUB_SHA::7}). Download moving-day-chaos.apk on your Android phone and open it (allow installing from unknown sources)."
+          gh release delete android-latest --yes --cleanup-tag 2>/dev/null || true
+          gh release create android-latest build/moving-day-chaos.apk --title "Android test build v${VERSION} (#${GITHUB_RUN_NUMBER})" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"

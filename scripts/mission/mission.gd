@@ -48,7 +48,8 @@ func _ready() -> void:
 		hud = Hud.new()
 		hud.mission = self
 		add_child(hud)
-		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
+		if not TouchControls.wanted():
+			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
 func spawn_mover(feet: Vector3) -> Mover:

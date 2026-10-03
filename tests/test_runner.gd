@@ -14,6 +14,7 @@ func _ready() -> void:
 	seed(1234)
 	_test_audio_buses()
 	_test_data()
+	await _test_touch_controls()
 	await _test_grab_and_carry()
 	await _test_sofa_needs_two()
 	await _test_fragile()
@@ -63,6 +64,52 @@ func _test_data() -> void:
 		check(trans[key].has("ar"), "Arabic translation for " + key)
 	for ch in ["•", "$", "−"]:
 		check(UITheme.FONT.has_char(ch.unicode_at(0)), "font has glyph " + ch)
+
+
+func _test_touch_controls() -> void:
+	var tc := TouchControls.new()
+	add_child(tc)
+	await get_tree().process_frame
+	var size := tc.get_viewport_rect().size
+	var both: Vector2 = tc._buttons.filter(func(b: Dictionary) -> bool: return b.id == "both")[0].pos
+	var left: Vector2 = tc._buttons.filter(func(b: Dictionary) -> bool: return b.id == "left")[0].pos
+	tc._touch_down(0, both)
+	tc._touch_up(0)
+	check(tc.grab[0] and tc.grab[1], "GRAB button toggles both hands on")
+	tc._touch_down(0, left)
+	tc._touch_up(0)
+	check(not tc.grab[0] and tc.grab[1], "L button toggles only the left hand")
+	tc._touch_down(0, both)
+	tc._touch_up(0)
+	check(tc.grab[0] and tc.grab[1], "GRAB with one hand on turns both on")
+	tc._touch_down(0, both)
+	tc._touch_up(0)
+	check(not tc.grab[0] and not tc.grab[1], "GRAB again lets go with both")
+	# Stick on the left, look drag on the right, at the same time (two fingers).
+	var stick := InputEventScreenTouch.new()
+	stick.index = 1
+	stick.pressed = true
+	stick.position = Vector2(300, size.y - 300)
+	tc._unhandled_input(stick)
+	var drag := InputEventScreenDrag.new()
+	drag.index = 1
+	drag.position = stick.position + Vector2(0, -200)
+	tc._unhandled_input(drag)
+	check(tc.move.y < -0.9, "dragging the stick up walks forward (%s)" % tc.move)
+	var look := InputEventScreenTouch.new()
+	look.index = 2
+	look.pressed = true
+	look.position = Vector2(size.x * 0.6, size.y * 0.4)
+	tc._unhandled_input(look)
+	var look_drag := InputEventScreenDrag.new()
+	look_drag.index = 2
+	look_drag.position = look.position + Vector2(100, 0)
+	tc._unhandled_input(look_drag)
+	check(tc.take_look().x > 0.3, "dragging on the right turns the camera")
+	stick.pressed = false
+	tc._unhandled_input(stick)
+	eq(tc.move, Vector2.ZERO, "lifting the thumb stops walking")
+	tc.queue_free()
 
 
 func _new_arena() -> Node3D:

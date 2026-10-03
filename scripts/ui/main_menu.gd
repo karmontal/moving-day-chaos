@@ -53,6 +53,11 @@ func _ready() -> void:
 	version.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
+		get_tree().quit()
+
+
 func _button(parent: Node, key: String, action: Callable) -> Button:
 	var b := Button.new()
 	b.text = key

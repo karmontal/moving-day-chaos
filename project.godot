@@ -15,6 +15,8 @@ config/description="A physics co-op party game about moving furniture very, very
 config/version="0.1.0"
 run/main_scene="res://scenes/main_menu.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://assets/art/icon_512.png"
+config/quit_on_go_back=false
 boot_splash/bg_color=Color(0.75, 0.9, 1, 1)
 
 [autoload]
@@ -33,6 +35,11 @@ window/size/window_width_override=1280
 window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
+window/handheld/orientation=4
+
+[input_devices]
+
+pointing/emulate_mouse_from_touch=true
 
 [gui]
 
@@ -56,3 +63,5 @@ renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 environment/defaults/default_clear_color=Color(0.75, 0.9, 1, 1)
 anti_aliasing/quality/msaa_3d=2
+anti_aliasing/quality/msaa_3d.mobile=0
+lights_and_shadows/directional_shadow/size.mobile=2048

@@ -1,44 +1,190 @@
 {
-  "GAME_TITLE": {"en": "Moving Day Chaos", "ar": "فوضى يوم النقل"},
-  "GAME_TAGLINE": {"en": "Sofa So Good Movers — we break it, you bought it", "ar": "شركة «كنبة تمام» — نكسرها وانت تدفع"},
-  "MENU_VERSION": {"en": "Physics prototype v%s", "ar": "نسخة تجريبية للفيزياء v%s"},
-  "BTN_PLAY": {"en": "Start the job", "ar": "ابدأ الشغل"},
-  "BTN_QUIT": {"en": "Quit", "ar": "خروج"},
-  "BTN_CLOSE": {"en": "Close", "ar": "إغلاق"},
-  "BTN_RESUME": {"en": "Resume", "ar": "متابعة"},
-  "BTN_RESTART": {"en": "Restart job", "ar": "أعد المهمة"},
-  "BTN_RETRY": {"en": "Try again", "ar": "حاول مرة ثانية"},
-  "BTN_MENU": {"en": "Main menu", "ar": "القائمة الرئيسية"},
-  "PAUSE_TITLE": {"en": "Coffee break", "ar": "استراحة قهوة"},
-  "SET_TITLE": {"en": "Settings", "ar": "الإعدادات"},
-  "SET_MASTER": {"en": "Master volume", "ar": "الصوت العام"},
-  "SET_MUSIC": {"en": "Music", "ar": "الموسيقى"},
-  "SET_SFX": {"en": "Sound effects", "ar": "المؤثرات"},
-  "SET_FULLSCREEN": {"en": "Fullscreen", "ar": "ملء الشاشة"},
-  "SET_VSYNC": {"en": "V-Sync", "ar": "مزامنة عمودية"},
-  "SET_VIBRATION": {"en": "Vibration", "ar": "الاهتزاز"},
-  "SET_FLOATING_TEXT": {"en": "Floating money text", "ar": "نصوص المبالغ الطائرة"},
-  "SET_LANGUAGE": {"en": "Language", "ar": "اللغة"},
-  "SET_SENSITIVITY": {"en": "Mouse sensitivity", "ar": "حساسية الماوس"},
-  "SET_INVERT_Y": {"en": "Invert vertical look", "ar": "عكس النظر العمودي"},
-  "HUD_CHECKLIST": {"en": "Moving list", "ar": "قائمة العفش"},
-  "HUD_LOADED": {"en": "Loaded %d / %d", "ar": "محمّل %d / %d"},
-  "HUD_BROKEN": {"en": "CRASH!", "ar": "انكسر!"},
-  "HUD_CONTROLS": {"en": "Mouse: aim arms (look down to reach low)  ·  LMB / RMB: grab with left / right hand  ·  F: both  ·  Q / E: spin  ·  Space: jump  ·  Esc: pause", "ar": "الماوس: وجّه الأيدي (انظر للأسفل لتصل للأرض)  ·  الزر الأيسر / الأيمن: امسك باليد اليسرى / اليمنى  ·  F: الاثنتين  ·  Q / E: لف  ·  Space: قفز  ·  Esc: إيقاف"},
-  "TAG_FRAGILE": {"en": "FRAGILE", "ar": "قابل للكسر"},
-  "TAG_HEAVY": {"en": "HEAVY", "ar": "ثقيل"},
-  "RES_COMPLETE": {"en": "Job done!", "ar": "خلص الشغل!"},
-  "RES_TIMEUP": {"en": "Time's up!", "ar": "انتهى الوقت!"},
-  "RES_LOADED": {"en": "Loaded: %d / %d", "ar": "تم تحميل: %d / %d"},
-  "RES_BROKEN": {"en": "Broken: %d  (−$%d)", "ar": "مكسور: %d  (−$%d)"},
-  "RES_BONUS": {"en": "Speed bonus: +$%d", "ar": "مكافأة السرعة: +$%d"},
-  "RES_MONEY": {"en": "Paid: $%d", "ar": "الأجرة: $%d"},
-  "ITEM_BOX_SMALL": {"en": "Small box", "ar": "كرتونة صغيرة"},
-  "ITEM_BOX_LARGE": {"en": "Big box", "ar": "كرتونة كبيرة"},
-  "ITEM_BOX_BOOKS": {"en": "Box of books (oof)", "ar": "كرتونة كتب (ثقيلة!)"},
-  "ITEM_LAMP": {"en": "Floor lamp", "ar": "أباجورة"},
-  "ITEM_TV": {"en": "TV", "ar": "تلفزيون"},
-  "ITEM_PLANT": {"en": "Potted plant", "ar": "نبتة"},
-  "ITEM_CHAIR": {"en": "Chair", "ar": "كرسي"},
-  "ITEM_SOFA": {"en": "Pink sofa", "ar": "الكنبة الوردية"}
+  "GAME_TITLE": {
+    "en": "Moving Day Chaos",
+    "ar": "فوضى يوم النقل"
+  },
+  "GAME_TAGLINE": {
+    "en": "Sofa So Good Movers — we break it, you bought it",
+    "ar": "شركة «كنبة تمام» — نكسرها وانت تدفع"
+  },
+  "MENU_VERSION": {
+    "en": "Physics prototype v%s",
+    "ar": "نسخة تجريبية للفيزياء v%s"
+  },
+  "BTN_PLAY": {
+    "en": "Start the job",
+    "ar": "ابدأ الشغل"
+  },
+  "BTN_QUIT": {
+    "en": "Quit",
+    "ar": "خروج"
+  },
+  "BTN_CLOSE": {
+    "en": "Close",
+    "ar": "إغلاق"
+  },
+  "BTN_RESUME": {
+    "en": "Resume",
+    "ar": "متابعة"
+  },
+  "BTN_RESTART": {
+    "en": "Restart job",
+    "ar": "أعد المهمة"
+  },
+  "BTN_RETRY": {
+    "en": "Try again",
+    "ar": "حاول مرة ثانية"
+  },
+  "BTN_MENU": {
+    "en": "Main menu",
+    "ar": "القائمة الرئيسية"
+  },
+  "PAUSE_TITLE": {
+    "en": "Coffee break",
+    "ar": "استراحة قهوة"
+  },
+  "SET_TITLE": {
+    "en": "Settings",
+    "ar": "الإعدادات"
+  },
+  "SET_MASTER": {
+    "en": "Master volume",
+    "ar": "الصوت العام"
+  },
+  "SET_MUSIC": {
+    "en": "Music",
+    "ar": "الموسيقى"
+  },
+  "SET_SFX": {
+    "en": "Sound effects",
+    "ar": "المؤثرات"
+  },
+  "SET_FULLSCREEN": {
+    "en": "Fullscreen",
+    "ar": "ملء الشاشة"
+  },
+  "SET_VSYNC": {
+    "en": "V-Sync",
+    "ar": "مزامنة عمودية"
+  },
+  "SET_VIBRATION": {
+    "en": "Vibration",
+    "ar": "الاهتزاز"
+  },
+  "SET_FLOATING_TEXT": {
+    "en": "Floating money text",
+    "ar": "نصوص المبالغ الطائرة"
+  },
+  "SET_LANGUAGE": {
+    "en": "Language",
+    "ar": "اللغة"
+  },
+  "SET_SENSITIVITY": {
+    "en": "Mouse sensitivity",
+    "ar": "حساسية الماوس"
+  },
+  "SET_INVERT_Y": {
+    "en": "Invert vertical look",
+    "ar": "عكس النظر العمودي"
+  },
+  "HUD_CHECKLIST": {
+    "en": "Moving list",
+    "ar": "قائمة العفش"
+  },
+  "HUD_LOADED": {
+    "en": "Loaded %d / %d",
+    "ar": "محمّل %d / %d"
+  },
+  "HUD_BROKEN": {
+    "en": "CRASH!",
+    "ar": "انكسر!"
+  },
+  "HUD_CONTROLS": {
+    "en": "Mouse: aim arms (look down to reach low)  ·  LMB / RMB: grab with left / right hand  ·  F: both  ·  Q / E: spin  ·  Space: jump  ·  Esc: pause",
+    "ar": "الماوس: وجّه الأيدي (انظر للأسفل لتصل للأرض)  ·  الزر الأيسر / الأيمن: امسك باليد اليسرى / اليمنى  ·  F: الاثنتين  ·  Q / E: لف  ·  Space: قفز  ·  Esc: إيقاف"
+  },
+  "TAG_FRAGILE": {
+    "en": "FRAGILE",
+    "ar": "قابل للكسر"
+  },
+  "TAG_HEAVY": {
+    "en": "HEAVY",
+    "ar": "ثقيل"
+  },
+  "RES_COMPLETE": {
+    "en": "Job done!",
+    "ar": "خلص الشغل!"
+  },
+  "RES_TIMEUP": {
+    "en": "Time's up!",
+    "ar": "انتهى الوقت!"
+  },
+  "RES_LOADED": {
+    "en": "Loaded: %d / %d",
+    "ar": "تم تحميل: %d / %d"
+  },
+  "RES_BROKEN": {
+    "en": "Broken: %d  (−$%d)",
+    "ar": "مكسور: %d  (−$%d)"
+  },
+  "RES_BONUS": {
+    "en": "Speed bonus: +$%d",
+    "ar": "مكافأة السرعة: +$%d"
+  },
+  "RES_MONEY": {
+    "en": "Paid: $%d",
+    "ar": "الأجرة: $%d"
+  },
+  "ITEM_BOX_SMALL": {
+    "en": "Small box",
+    "ar": "كرتونة صغيرة"
+  },
+  "ITEM_BOX_LARGE": {
+    "en": "Big box",
+    "ar": "كرتونة كبيرة"
+  },
+  "ITEM_BOX_BOOKS": {
+    "en": "Box of books (oof)",
+    "ar": "كرتونة كتب (ثقيلة!)"
+  },
+  "ITEM_LAMP": {
+    "en": "Floor lamp",
+    "ar": "أباجورة"
+  },
+  "ITEM_TV": {
+    "en": "TV",
+    "ar": "تلفزيون"
+  },
+  "ITEM_PLANT": {
+    "en": "Potted plant",
+    "ar": "نبتة"
+  },
+  "ITEM_CHAIR": {
+    "en": "Chair",
+    "ar": "كرسي"
+  },
+  "ITEM_SOFA": {
+    "en": "Pink sofa",
+    "ar": "الكنبة الوردية"
+  },
+  "HUD_CONTROLS_TOUCH": {
+    "en": "Left: move  ·  Right: drag to look and raise/lower arms  ·  GRAB / L / R: tap to hold, tap again to let go",
+    "ar": "اليسار: حركة  ·  اليمين: اسحب لتنظر وترفع/تنزل الأيدي  ·  امسك / يسرى / يمنى: اضغط للمسك، واضغط مرة ثانية لتفلت"
+  },
+  "TOUCH_GRAB": {
+    "en": "GRAB",
+    "ar": "امسك"
+  },
+  "TOUCH_LEFT": {
+    "en": "L",
+    "ar": "يسرى"
+  },
+  "TOUCH_RIGHT": {
+    "en": "R",
+    "ar": "يمنى"
+  },
+  "TOUCH_JUMP": {
+    "en": "JUMP",
+    "ar": "اقفز"
+  }
 }

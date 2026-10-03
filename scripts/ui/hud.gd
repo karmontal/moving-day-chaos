@@ -13,6 +13,7 @@ var _rows := {}  # Grabbable -> Label
 var _hands: Array[Panel] = []
 var _hint: Label
 var _popup: Modal = null
+var _touch: TouchControls = null
 
 
 func _ready() -> void:
@@ -52,7 +53,7 @@ func _ready() -> void:
 	_list.add_child(title)
 	for item in mission.items:
 		var l := Label.new()
-		l.add_theme_font_size_override("font_size", 24)
+		l.add_theme_font_size_override("font_size", 20 if TouchControls.wanted() else 24)
 		l.add_theme_constant_override("line_spacing", -6)
 		_list.add_child(l)
 		_rows[item] = l
@@ -71,8 +72,17 @@ func _ready() -> void:
 		hands_box.add_child(p)
 		_hands.append(p)
 
+	if TouchControls.wanted():
+		_touch = TouchControls.new()
+		_root.add_child(_touch)
+		_touch.pause_pressed.connect(func() -> void:
+			if _popup == null and not mission.is_finished:
+				_open_pause())
+		if mission.rig:
+			mission.rig.touch = _touch
+
 	_hint = Label.new()
-	_hint.text = "HUD_CONTROLS"
+	_hint.text = "HUD_CONTROLS_TOUCH" if _touch else "HUD_CONTROLS"
 	_hint.add_theme_font_size_override("font_size", 22)
 	_hint.add_theme_color_override("font_color", Palette.CREAM)
 	_hint.add_theme_color_override("font_outline_color", Palette.CHOCOLATE)
@@ -125,6 +135,12 @@ func _draw_stats() -> void:
 	_stats.draw_string(font, Vector2(36, 152), count, HORIZONTAL_ALIGNMENT_LEFT, -1, 38, Palette.CREAM)
 
 
+func _notification(what: int) -> void:
+	# Android back button: pause instead of quitting (application/config/quit_on_go_back=false).
+	if what == NOTIFICATION_WM_GO_BACK_REQUEST and _popup == null and mission and not mission.is_finished:
+		_open_pause()
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause") and _popup == null and not mission.is_finished:
 		get_viewport().set_input_as_handled()
@@ -142,7 +158,7 @@ func _open_pause() -> void:
 	_popup.closed.connect(func() -> void:
 		_popup = null
 		get_tree().paused = false
-		if not mission.is_finished:
+		if not mission.is_finished and _touch == null:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED)
 
 
