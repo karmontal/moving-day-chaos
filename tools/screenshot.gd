@@ -53,8 +53,11 @@ func _ready() -> void:
 					_mission.rig.spring.collision_mask = 0
 				"sofa":
 					await _sofa_scene()
-				"crew":
+				"crew", "crew_back":
 					await _crew_scene()
+					if which == "crew_back":
+						for m in _mission.movers:
+							m.input.yaw = PI
 				"results":
 					await _seconds(1.0)
 					for item in _mission.items.slice(0, 7):

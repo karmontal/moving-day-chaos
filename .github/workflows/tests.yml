@@ -22,3 +22,14 @@ jobs:
         run: ./godot --headless --path . res://tests/test_runner.tscn
       - name: Online smoke test (host + client over localhost)
         run: tools/net_test.sh ./godot
+      - uses: oven-sh/setup-bun@v2
+      - name: Internet play test (host + client through a local noray, NAT and relay)
+        run: |
+          git clone -q --depth 1 https://github.com/foxssake/noray.git /tmp/noray
+          cd /tmp/noray && bun install --production
+          printf 'NORAY_OID_LENGTH=6\nNORAY_OID_CHARSET=ABCDEFGHJKLMNPQRSTUVWXYZ23456789\nNORAY_UDP_RELAY_PORTS=49152-49251\nNORAY_HTTP_HOST=127.0.0.1\n' > .env
+          (bun bin/noray.ts > /tmp/noray.log 2>&1 &)
+          sleep 3
+          cd "$GITHUB_WORKSPACE"
+          tools/net_test.sh ./godot nat
+          tools/net_test.sh ./godot relay

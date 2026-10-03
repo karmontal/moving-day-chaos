@@ -5,11 +5,18 @@ extends Node
 const TIMEOUT := 40.0
 
 var role := "client"
+## "lan" (direct 127.0.0.1) or "nat" / "relay" through a noray server on 127.0.0.1.
+var mode := "lan"
+const CODE_FILE := "/tmp/mdc_net_room_code.txt"
 
 
 func _ready() -> void:
 	var args := OS.get_cmdline_user_args()
 	role = args[0] if args.size() > 0 else "client"
+	mode = args[1] if args.size() > 1 else "lan"
+	if mode != "lan":
+		Data.online = {"noray_host": "127.0.0.1", "noray_port": 8890, "registrar_port": 8809}
+		Net.force_relay = mode == "relay"
 	# Both processes share user://, so never save settings from here.
 	Settings.character = 0
 	Settings.player_name = role
@@ -21,9 +28,20 @@ func _ready() -> void:
 
 
 func _host(deadline: int) -> void:
-	if Net.host() != OK:
-		_finish(1, "host: could not open port")
-		return
+	if mode == "lan":
+		if Net.host() != OK:
+			_finish(1, "host: could not open port")
+			return
+	else:
+		DirAccess.remove_absolute(CODE_FILE)
+		var err: Error = await Net.host_online()
+		if err != OK:
+			_finish(1, "host: noray registration failed (%s)" % error_string(err))
+			return
+		var f := FileAccess.open(CODE_FILE, FileAccess.WRITE)
+		f.store_string(Net.room_code)
+		f.close()
+		print("host: room code ", Net.room_code)
 	while Net.players.size() < 2:
 		if Time.get_ticks_msec() > deadline:
 			_finish(1, "host: nobody joined")
@@ -48,10 +66,19 @@ func _host(deadline: int) -> void:
 
 
 func _client(deadline: int) -> void:
-	await _seconds(1.5)  # give the host a moment to open the port
-	if Net.join("127.0.0.1") != OK:
-		_finish(1, "client: join failed")
-		return
+	if mode == "lan":
+		await _seconds(1.5)  # give the host a moment to open the port
+		if Net.join("127.0.0.1") != OK:
+			_finish(1, "client: join failed")
+			return
+	else:
+		while not FileAccess.file_exists(CODE_FILE) and Time.get_ticks_msec() < deadline:
+			await _seconds(0.2)
+		var code := FileAccess.get_file_as_string(CODE_FILE).strip_edges()
+		var err: Error = await Net.join_code(code)
+		if err != OK:
+			_finish(1, "client: join_code(%s) failed (%s)" % [code, error_string(err)])
+			return
 	var mission := await _wait_mission(deadline)
 	if mission == null:
 		_finish(1, "client: mission did not load")
@@ -88,7 +115,7 @@ func _client(deadline: int) -> void:
 	if me.color_index == other.color_index:
 		fails.append("players must have different characters")
 	if fails.is_empty():
-		_finish(0, "client: OK (moved %.2f m, host mover %.2f m)" % [me_moved, other_moved])
+		_finish(0, "client: OK [%s] (moved %.2f m, host mover %.2f m)" % [mode, me_moved, other_moved])
 	else:
 		_finish(1, "client: FAIL\n  " + "\n  ".join(fails))
 

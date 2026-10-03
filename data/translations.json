@@ -306,5 +306,33 @@
   "LOBBY_WAITING_RETRY": {
     "en": "The host can start the job again.",
     "ar": "المضيف بيقدر يعيد المهمة."
+  },
+  "LOBBY_INTERNET": {
+    "en": "Over the internet (room code):",
+    "ar": "عبر الإنترنت (بكود الغرفة):"
+  },
+  "LOBBY_LAN": {
+    "en": "Same Wi-Fi:",
+    "ar": "على نفس الواي فاي:"
+  },
+  "LOBBY_HOST_ONLINE": {
+    "en": "Host online",
+    "ar": "افتح غرفة أونلاين"
+  },
+  "LOBBY_JOIN_CODE": {
+    "en": "Join",
+    "ar": "ادخل"
+  },
+  "LOBBY_ROOM_CODE": {
+    "en": "Room code: %s",
+    "ar": "كود الغرفة: %s"
+  },
+  "NET_RELAY": {
+    "en": "Direct connection blocked, using the relay…",
+    "ar": "الاتصال المباشر ممنوع، بنمرّر عبر السيرفر…"
+  },
+  "NET_ONLINE_FAILED": {
+    "en": "Could not reach the online server (%s).",
+    "ar": "ما قدرنا نوصل لسيرفر الأونلاين (%s)."
   }
 }

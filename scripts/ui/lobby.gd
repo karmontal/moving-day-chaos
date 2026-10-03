@@ -6,6 +6,8 @@ var _choose := VBoxContainer.new()
 var _room := VBoxContainer.new()
 var _hosts_box := VBoxContainer.new()
 var _ip_edit := LineEdit.new()
+var _code_edit := LineEdit.new()
+var _code_label: Label
 var _name_edit := LineEdit.new()
 var _status: Label
 var _players_label: Label
@@ -24,6 +26,7 @@ func _ready() -> void:
 	_build_room()
 	Net.players_changed.connect(_refresh_room)
 	Net.hosts_changed.connect(_refresh_hosts)
+	Net.status_changed.connect(func(text: String) -> void: _status.text = text)
 	Net.session_ended.connect(func(reason: String) -> void:
 		_show_choose()
 		_status.text = reason)
@@ -56,6 +59,27 @@ func _build_choose() -> void:
 	_name_edit.text_changed.connect(func(t: String) -> void: Settings.set_value("player_name", t.strip_edges()))
 	name_row.add_child(_name_edit)
 	_choose.add_child(name_row)
+	if Net.online_available():
+		var online_title := Label.new()
+		online_title.text = "LOBBY_INTERNET"
+		online_title.add_theme_color_override("font_color", Palette.CHOCOLATE)
+		_choose.add_child(online_title)
+		var online_row := HBoxContainer.new()
+		online_row.add_child(_button("LOBBY_HOST_ONLINE", _host_online))
+		_code_edit.placeholder_text = "ABC123"
+		_code_edit.max_length = 8
+		_code_edit.custom_minimum_size.x = 220
+		_code_edit.alignment = HORIZONTAL_ALIGNMENT_CENTER
+		online_row.add_child(_code_edit)
+		var join_code := Button.new()
+		join_code.text = "LOBBY_JOIN_CODE"
+		join_code.pressed.connect(func() -> void: _join_code(_code_edit.text))
+		online_row.add_child(join_code)
+		_choose.add_child(online_row)
+	var lan_title := Label.new()
+	lan_title.text = "LOBBY_LAN"
+	lan_title.add_theme_color_override("font_color", Palette.CHOCOLATE)
+	_choose.add_child(lan_title)
 	_choose.add_child(_button("LOBBY_HOST", _host))
 	var found := Label.new()
 	found.text = "LOBBY_FOUND"
@@ -87,6 +111,8 @@ func _build_room() -> void:
 	add_child(_room)
 	_room.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	_room.add_child(UITheme.heading("LOBBY_PICK", 64, Palette.CREAM))
+	_code_label = UITheme.heading("", 56, Palette.HIVIS)
+	_room.add_child(_code_label)
 	_picker = CharacterPicker.new()
 	_picker.picked.connect(func(i: int) -> void: Net.set_character(i))
 	_room.add_child(_picker)
@@ -127,6 +153,23 @@ func _host() -> void:
 	var err := Net.host()
 	if err != OK:
 		_status.text = tr("NET_HOST_FAILED") % err
+		return
+	_show_room()
+
+
+func _host_online() -> void:
+	_status.text = "NET_CONNECTING"
+	var err: Error = await Net.host_online()
+	if err != OK:
+		_status.text = tr("NET_ONLINE_FAILED") % error_string(err)
+		return
+	_show_room()
+
+
+func _join_code(code: String) -> void:
+	var err: Error = await Net.join_code(code)
+	if err != OK:
+		_status.text = tr("NET_ONLINE_FAILED") % error_string(err)
 		return
 	_show_room()
 
@@ -185,6 +228,8 @@ func _refresh_room() -> void:
 	_picker.taken = Net.taken_characters(Net.my_id())
 	_picker.set_selected(Settings.character)
 	_start.visible = Net.is_host()
+	_code_label.visible = Net.room_code != ""
+	_code_label.text = tr("LOBBY_ROOM_CODE") % Net.room_code
 	if Net.is_host():
 		var ips := Net.local_ips()
 		_info_label.text = tr("LOBBY_HOST_INFO") % (", ".join(ips) if not ips.is_empty() else "?")

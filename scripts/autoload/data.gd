@@ -5,12 +5,15 @@ extends Node
 var game: Dictionary = {}
 var furniture: Dictionary = {}
 var missions: Dictionary = {}
+## noray server for internet play (data/online.json); empty host = LAN only.
+var online: Dictionary = {}
 
 
 func _init() -> void:
 	game = _load("res://data/game.json")
 	furniture = _load("res://data/furniture.json")
 	missions = _load("res://data/missions.json")
+	online = _load("res://data/online.json")
 
 
 func item(id: String) -> Dictionary:

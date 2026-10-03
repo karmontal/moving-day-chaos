@@ -6,8 +6,6 @@ extends Node3D
 ## (assets/models/mover_<n>.glb) when one exists, otherwise primitive shapes.
 
 const MODEL_PATH := "res://assets/models/mover_%d.glb"
-## Shared idle clip (same Meshy skeleton for every crew member).
-const IDLE_PATH := "res://assets/models/anim_idle.glb"
 ## The walk clip covers about this many metres per second at speed 1.
 const WALK_CLIP_SPEED := 1.25
 ## Arm bones stay out of the clips: the physics noodle arms do the arm work.
@@ -157,12 +155,11 @@ func _process_anim(hspeed: float) -> void:
 		if _anim.current_animation != _walk_clip:
 			_anim.play(_walk_clip, 0.15)
 		_anim.speed_scale = clampf(hspeed / WALK_CLIP_SPEED, 0.6, 3.2)
-	elif _anim.has_animation("idle"):
-		if _anim.current_animation != "idle":
-			_anim.play("idle", 0.25)
-		_anim.speed_scale = 1.0
-	else:
-		_anim.speed_scale = 0.0
+	elif _anim.is_playing():
+		# Standing still: back to the straight, front-facing rest pose (the springs keep it alive).
+		_anim.stop()
+		if _skeleton:
+			_skeleton.reset_bone_poses()
 
 
 func _build_model(scene: PackedScene) -> void:
@@ -194,8 +191,7 @@ func _setup_animation(model: Node) -> void:
 	for anim_name in _anim.get_animation_list():
 		if anim_name.to_lower().contains("walk"):
 			_walk_clip = anim_name
-	if ResourceLoader.exists(IDLE_PATH):
-		_add_shared_idle()
+	_fold_arm_vertices(model)
 	for anim_name in _anim.get_animation_list():
 		var a := _anim.get_animation(anim_name)
 		a.loop_mode = Animation.LOOP_LINEAR
@@ -266,44 +262,58 @@ func _build_stars() -> void:
 	_stars.visible = false
 
 
-## Copies the idle clip from anim_idle.glb, retargeted to this skeleton: every rotation key is
-## re-expressed relative to the source rest pose and applied on top of ours (the crew members
-## were rigged separately, so their rest poses differ slightly). Bone travel is dropped.
-func _add_shared_idle() -> void:
-	var idle_scene: Node = (load(IDLE_PATH) as PackedScene).instantiate()
-	var players := idle_scene.find_children("*", "AnimationPlayer", true, false)
-	var skels := idle_scene.find_children("*", "Skeleton3D", true, false)
-	if players.is_empty() or skels.is_empty() or _skeleton == null:
-		idle_scene.free()
-		return
-	var src_player: AnimationPlayer = players[0]
-	var src_skel: Skeleton3D = skels[0]
-	var list := src_player.get_animation_list()
-	if list.is_empty():
-		idle_scene.free()
-		return
-	var a := src_player.get_animation(list[0]).duplicate(true) as Animation
-	for t in range(a.get_track_count() - 1, -1, -1):
-		var bone := String(a.track_get_path(t)).get_slice(":", 1)
-		var src_bone := src_skel.find_bone(bone)
-		var dst_bone := _skeleton.find_bone(bone)
-		if a.track_get_type(t) != Animation.TYPE_ROTATION_3D or src_bone < 0 or dst_bone < 0:
-			a.remove_track(t)
+## The models hold their hands behind their backs, so the hands are partly skinned to the spine
+## and would stay visible when the arm bones fold away. Re-skin every vertex with real arm weight
+## fully to its upper-arm bone so the whole arm, hands included, folds into the shoulder.
+func _fold_arm_vertices(model: Node) -> void:
+	for n in model.find_children("*", "MeshInstance3D", true, false):
+		var mi := n as MeshInstance3D
+		if mi.skin == null or not (mi.mesh is ArrayMesh):
 			continue
-		var src_rest := src_skel.get_bone_rest(src_bone).basis.get_rotation_quaternion()
-		var dst_rest := _skeleton.get_bone_rest(dst_bone).basis.get_rotation_quaternion()
-		# Meshy's idle stands at a ~40° angle; turn the hips back to face forward.
-		var unturn := Quaternion.IDENTITY
-		if bone == "Hips" and a.track_get_key_count(t) > 0:
-			var yaw := 0.0
-			for k in a.track_get_key_count(t):
-				yaw += Basis(a.track_get_key_value(t, k) as Quaternion).get_euler().y
-			unturn = Quaternion(Vector3.UP, yaw / a.track_get_key_count(t))
-		for k in a.track_get_key_count(t):
-			var q: Quaternion = a.track_get_key_value(t, k)
-			a.track_set_key_value(t, k, unturn * dst_rest * (src_rest.inverse() * q))
-	_anim.get_animation_library("").add_animation("idle", a)
-	idle_scene.free()
+		var side_of_bind := {}  # bind index -> bind index of that side's upper arm
+		var upper := {"Left": -1, "Right": -1}
+		for b in mi.skin.get_bind_count():
+			var bone_name := String(mi.skin.get_bind_name(b))
+			if bone_name == "" and _skeleton:
+				bone_name = _skeleton.get_bone_name(mi.skin.get_bind_bone(b))
+			for side in ["Left", "Right"]:
+				if bone_name == side + "Arm":
+					upper[side] = b
+		for b in mi.skin.get_bind_count():
+			var bone_name := String(mi.skin.get_bind_name(b))
+			if bone_name == "" and _skeleton:
+				bone_name = _skeleton.get_bone_name(mi.skin.get_bind_bone(b))
+			if bone_name in ARM_BONES:
+				side_of_bind[b] = upper["Left" if bone_name.begins_with("Left") else "Right"]
+		if side_of_bind.is_empty():
+			continue
+		var src := mi.mesh as ArrayMesh
+		var out := ArrayMesh.new()
+		for surf in src.get_surface_count():
+			var arrays := src.surface_get_arrays(surf)
+			var bones: PackedInt32Array = arrays[Mesh.ARRAY_BONES]
+			var weights: PackedFloat32Array = arrays[Mesh.ARRAY_WEIGHTS]
+			if bones.is_empty():
+				out.add_surface_from_arrays(src.surface_get_primitive_type(surf), arrays)
+				continue
+			var per := 8 if src.surface_get_format(surf) & Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS else 4
+			for v in bones.size() / per:
+				var arm_w := 0.0
+				var arm_bind := -1
+				for k in per:
+					var bi := bones[v * per + k]
+					if side_of_bind.has(bi):
+						arm_w += weights[v * per + k]
+						arm_bind = side_of_bind[bi]
+				if arm_w > 0.5 and arm_bind >= 0:
+					for k in per:
+						bones[v * per + k] = arm_bind if k == 0 else 0
+						weights[v * per + k] = 1.0 if k == 0 else 0.0
+			arrays[Mesh.ARRAY_BONES] = bones
+			arrays[Mesh.ARRAY_WEIGHTS] = weights
+			out.add_surface_from_arrays(src.surface_get_primitive_type(surf), arrays, [], {}, src.surface_get_format(surf) & Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS)
+			out.surface_set_material(surf, src.surface_get_material(surf))
+		mi.mesh = out
 
 
 static func _merged_aabb(root: Node) -> AABB:

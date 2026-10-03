@@ -1,5 +1,6 @@
 extends Node
-## Online session (Phase 2): ENet host/join plus LAN discovery. The host is authoritative: it runs
+## Online session (Phase 2): ENet host/join, LAN discovery, and internet play through our noray
+## server (room codes, NAT punch-through with relay fallback, see scripts/net/noray_client.gd). The host is authoritative: it runs
 ## all physics and streams snapshots; clients only send their MoverInput (see Mission).
 ## Swapping ENetMultiplayerPeer for SteamMultiplayerPeer later keeps everything else the same.
 
@@ -7,6 +8,7 @@ signal players_changed
 signal session_started(mission_id: String)
 signal session_ended(reason: String)
 signal hosts_changed
+signal status_changed(text: String)
 
 const PORT := 7777
 const DISCOVERY_PORT := 7778
@@ -22,6 +24,13 @@ var active := false
 var in_game := false
 ## Why the last session ended (shown by the lobby), cleared once shown.
 var last_error := ""
+## Internet play: the room code friends type in (noray open id), empty on LAN.
+var room_code := ""
+var noray := NorayClient.new()
+var _join_code := ""
+var _tried_relay := false
+## Tests: skip the NAT punch and go straight through the relay.
+var force_relay := false
 
 var _broadcast: PacketPeerUDP = null
 var _listen: PacketPeerUDP = null
@@ -29,10 +38,13 @@ var _broadcast_timer := 0.0
 
 
 func _ready() -> void:
+	add_child(noray)
+	noray.connect_nat.connect(_on_noray_connect.bind(false))
+	noray.connect_relay.connect(_on_noray_connect.bind(true))
 	multiplayer.peer_connected.connect(_on_peer_connected)
 	multiplayer.peer_disconnected.connect(_on_peer_disconnected)
 	multiplayer.connected_to_server.connect(_on_connected)
-	multiplayer.connection_failed.connect(func() -> void: _end("NET_FAILED"))
+	multiplayer.connection_failed.connect(_on_connection_failed)
 	multiplayer.server_disconnected.connect(func() -> void: _end("NET_HOST_LEFT"))
 
 
@@ -74,12 +86,115 @@ func join(ip: String) -> Error:
 func leave() -> void:
 	if active:
 		multiplayer.multiplayer_peer.close()
+	noray.disconnect_from_host()
+	room_code = ""
+	_join_code = ""
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
 	active = false
 	in_game = false
 	players.clear()
 	_broadcast = null
 	players_changed.emit()
+
+
+func online_available() -> bool:
+	return str(Data.online.get("noray_host", "")) != ""
+
+
+## Internet host: register with noray, listen on the registered port, publish the room code.
+func host_online() -> Error:
+	leave()
+	var err := await _register_with_noray()
+	if err != OK:
+		return err
+	var peer := ENetMultiplayerPeer.new()
+	err = peer.create_server(noray.local_port, MAX_PLAYERS - 1)
+	if err != OK:
+		noray.disconnect_from_host()
+		return err
+	multiplayer.multiplayer_peer = peer
+	active = true
+	room_code = noray.oid
+	players = {1: {"name": Settings.player_name, "character": Settings.character}}
+	players_changed.emit()
+	return OK
+
+
+## Internet client: ask noray to connect us to the room (NAT punch first, relay as fallback).
+func join_code(code: String) -> Error:
+	leave()
+	code = code.strip_edges().to_upper()
+	if code.length() < 4:
+		return ERR_INVALID_PARAMETER
+	status_changed.emit("NET_CONNECTING")
+	var err := await _register_with_noray()
+	if err != OK:
+		return err
+	_join_code = code
+	_tried_relay = force_relay
+	return noray.request_relay(code) if force_relay else noray.request_nat(code)
+
+
+func _register_with_noray() -> Error:
+	var cfg := Data.online
+	var err := await noray.connect_to_host(str(cfg.noray_host), int(cfg.get("noray_port", 8890)))
+	if err != OK:
+		return err
+	noray.register_host()
+	var end := Time.get_ticks_msec() + 6000
+	while noray.pid == "" and Time.get_ticks_msec() < end:
+		await get_tree().process_frame
+	if noray.pid == "":
+		noray.disconnect_from_host()
+		return ERR_TIMEOUT
+	err = await noray.register_remote(int(cfg.get("registrar_port", 8809)))
+	if err != OK:
+		noray.disconnect_from_host()
+	return err
+
+
+func _on_noray_connect(address: String, port: int, relay: bool) -> void:
+	if is_host():
+		# Someone is joining: punch towards them from our listening socket.
+		await NorayClient.handshake_from_host(get_tree(), multiplayer.multiplayer_peer as ENetMultiplayerPeer, address, port)
+		return
+	if _join_code == "" or active:
+		return
+	var udp := PacketPeerUDP.new()
+	udp.bind(noray.local_port)
+	udp.set_dest_address(address, port)
+	var err := await NorayClient.handshake(get_tree(), udp)
+	udp.close()
+	if err != OK and err != ERR_BUSY:
+		_try_relay()
+		return
+	var peer := ENetMultiplayerPeer.new()
+	err = peer.create_client(address, port, 0, 0, 0, noray.local_port)
+	if err != OK:
+		_try_relay()
+		return
+	multiplayer.multiplayer_peer = peer
+	active = true
+
+
+func _try_relay() -> void:
+	if _tried_relay or _join_code == "":
+		_end("NET_FAILED")
+		return
+	_tried_relay = true
+	status_changed.emit("NET_RELAY")
+	if active:
+		multiplayer.multiplayer_peer.close()
+		multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+		active = false
+	noray.request_relay(_join_code)
+
+
+func _on_connection_failed() -> void:
+	if _join_code != "" and not _tried_relay:
+		_try_relay()
+	else:
+		_end("NET_FAILED")
 
 
 ## Starts listening for hosts on the local network (lobby "Join" screen).
