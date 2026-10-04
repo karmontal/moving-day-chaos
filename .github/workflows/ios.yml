@@ -1,0 +1,101 @@
+name: iOS build
+
+# Runs on a macOS runner (Xcode). Started by hand from the Actions tab (macOS minutes are costly).
+#
+# Without Apple secrets: exports the Xcode project only and checks that it compiles for the
+# simulator (no signing needed) -> artifact "moving-day-chaos-ios-xcode".
+#
+# With these repository secrets it builds a signed .ipa and uploads it to TestFlight:
+#   IOS_TEAM_ID                  Apple Developer Team ID (10 characters)
+#   IOS_DIST_CERT_P12_BASE64     Apple Distribution certificate (.p12), base64
+#   IOS_DIST_CERT_PASSWORD       its password
+#   IOS_PROFILE_BASE64           App Store provisioning profile for com.karmontal.movingdaychaos, base64
+#   IOS_PROFILE_NAME             the profile's name as shown in the Apple Developer portal
+#   ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_P8_BASE64   App Store Connect API key (.p8, base64)
+on:
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: macos-latest
+    env:
+      GODOT_VERSION: 4.7-stable
+      HAS_SIGNING: ${{ secrets.IOS_DIST_CERT_P12_BASE64 != '' && secrets.IOS_TEAM_ID != '' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot (macOS) and iOS templates
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_macos.universal.zip"
+          unzip -q godot.zip
+          echo "GODOT=$PWD/Godot.app/Contents/MacOS/Godot" >> "$GITHUB_ENV"
+          dir="$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION/-/.}"
+          mkdir -p "$dir"
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -oq -j templates.tpz "templates/ios.zip" "templates/version.txt" -d "$dir"
+          rm templates.tpz
+
+      - name: Import
+        run: |
+          "$GODOT" --headless --path . --import
+
+      - name: Install signing certificate and profile
+        if: env.HAS_SIGNING == 'true'
+        env:
+          P12: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN=$RUNNER_TEMP/build.keychain-db
+          security create-keychain -p ci "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p ci "$KEYCHAIN"
+          echo "$P12" | base64 --decode > $RUNNER_TEMP/cert.p12
+          security import $RUNNER_TEMP/cert.p12 -P "$P12_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security list-keychain -d user -s "$KEYCHAIN"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "$PROFILE" | base64 --decode > "$HOME/Library/MobileDevice/Provisioning Profiles/appstore.mobileprovision"
+
+      - name: Configure export preset
+        env:
+          TEAM_ID: ${{ secrets.IOS_TEAM_ID }}
+          PROFILE_NAME: ${{ secrets.IOS_PROFILE_NAME }}
+        run: |
+          VERSION=$(grep '^config/version=' project.godot | cut -d'"' -f2)
+          sed -i '' "s/^application\/short_version=\".*\"/application\/short_version=\"$VERSION\"/; s/^application\/version=\"1\"/application\/version=\"${GITHUB_RUN_NUMBER}\"/" export_presets.cfg
+          if [ "$HAS_SIGNING" = "true" ]; then
+            sed -i '' "s/^application\/app_store_team_id=\"\"/application\/app_store_team_id=\"$TEAM_ID\"/" export_presets.cfg
+            printf 'application/provisioning_profile_uuid_release=""\napplication/provisioning_profile_specifier_release="%s"\n' "$PROFILE_NAME" >> export_presets.cfg
+          else
+            # Placeholder team so Godot accepts the preset; only the Xcode project is produced.
+            sed -i '' 's/^application\/app_store_team_id=""/application\/app_store_team_id="ABCDE12345"/; s/^application\/export_project_only=false/application\/export_project_only=true/' export_presets.cfg
+          fi
+
+      - name: Export
+        run: |
+          mkdir -p build/ios
+          "$GODOT" --headless --path . --export-release "iOS" build/ios/MovingDayChaos.ipa
+          ls -la build/ios
+
+      - name: Compile check for the simulator (no signing)
+        if: env.HAS_SIGNING != 'true'
+        run: |
+          cd build/ios
+          xcodebuild -project MovingDayChaos.xcodeproj -scheme MovingDayChaos -sdk iphonesimulator \
+            -configuration Release CODE_SIGNING_ALLOWED=NO -quiet build | tail -20
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moving-day-chaos-ios-xcode
+          path: build/ios
+
+      - name: Upload to TestFlight
+        if: env.HAS_SIGNING == 'true'
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8_BASE64 }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_KEY_P8" | base64 --decode > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+          xcrun altool --upload-app --type ios -f build/ios/MovingDayChaos.ipa --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"

@@ -104,8 +104,10 @@ static func _set_faded(body: Node, on: bool) -> void:
 	var mat: StandardMaterial3D = body.get_meta("material", null)
 	if mat == null:
 		return
-	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA if on else BaseMaterial3D.TRANSPARENCY_DISABLED
-	mat.albedo_color.a = 0.22 if on else 1.0
+	var mats: Array = [mat] + body.get_meta("extra_materials", [])
+	for m: StandardMaterial3D in mats:
+		m.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA if on else BaseMaterial3D.TRANSPARENCY_DISABLED
+		m.albedo_color.a = 0.22 if on else 1.0
 
 
 func _physics_process(_delta: float) -> void:

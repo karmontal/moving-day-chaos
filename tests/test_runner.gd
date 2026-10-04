@@ -322,6 +322,15 @@ func _test_mission_delivery() -> void:
 		check(item.global_position.y > 0.0 and item.global_position.y < 1.5, "%s rests on the floor (y=%.2f)" % [item.item_id, item.global_position.y])
 		check(not item.broken, "%s survives spawning" % item.item_id)
 	eq(mission.delivered_count(), 0, "nothing delivered at start")
+	# The ramp climbs from the street to the truck bed (it was once built upside down).
+	var tr_data: Dictionary = mission.data.truck
+	var space := mission.get_world_3d().direct_space_state
+	var rx: float = tr_data.center_x
+	var rear: float = tr_data.rear_z
+	var high := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(rx, 3, rear - 0.15), Vector3(rx, -1, rear - 0.15), 1))
+	var low := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(rx, 3, rear - float(tr_data.ramp_length) + 0.15), Vector3(rx, -1, rear - float(tr_data.ramp_length) + 0.15), 1))
+	check(not high.is_empty() and absf(high.position.y - float(tr_data.bed_height)) < 0.15, "ramp top meets the truck bed (y=%s)" % (high.get("position", Vector3.ZERO).y))
+	check(not low.is_empty() and low.position.y < 0.15, "ramp foot rests on the street (y=%s)" % (low.get("position", Vector3.ZERO).y))
 	var box: Grabbable = mission.items.filter(func(g: Grabbable) -> bool: return g.item_id == "box_small")[0]
 	var zone := mission.zone
 	box.global_position = zone.global_position + Vector3(0, -zone.size.y * 0.5 + 0.5, 0)

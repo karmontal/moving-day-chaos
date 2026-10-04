@@ -1,6 +1,6 @@
 name: Android build
 
-# Exports a signed APK + a Windows build on every push to main (or by hand from the Actions tab).
+# Exports a signed APK + Windows + macOS (universal, ad-hoc signed) builds on every push to main (or by hand from the Actions tab).
 # The APK is published as the "android-latest" GitHub Release (download straight to a phone), and
 # both builds go to itch.io when the BUTLER_API_KEY secret and ITCH_GAME variable are set
 # (channels "android" and "windows").
@@ -33,7 +33,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.local/share/godot/export_templates
-          key: godot-android-windows-templates-${{ env.GODOT_VERSION }}
+          key: godot-android-windows-macos-templates-${{ env.GODOT_VERSION }}
 
       - name: Download Android export templates
         if: steps.templates.outputs.cache-hit != 'true'
@@ -41,7 +41,7 @@ jobs:
           dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION/-/.}"
           mkdir -p "$dir"
           curl -sSL -o templates.tpz "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
-          unzip -oq -j templates.tpz "templates/android_*.apk" "templates/windows_release_x86_64.exe" "templates/windows_debug_x86_64.exe" "templates/version.txt" -d "$dir"
+          unzip -oq -j templates.tpz "templates/android_*.apk" "templates/windows_release_x86_64.exe" "templates/windows_debug_x86_64.exe" "templates/macos.zip" "templates/version.txt" -d "$dir"
           ls "$dir"
           rm templates.tpz
 
@@ -87,6 +87,18 @@ jobs:
           test -f build/windows/MovingDayChaos.exe
           ls -lh build/windows
 
+      - name: Export macOS
+        run: |
+          mkdir -p build/mac
+          ./godot --headless --path . --export-release "macOS" build/mac/MovingDayChaos.zip
+          test -f build/mac/MovingDayChaos.zip
+          ls -lh build/mac
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moving-day-chaos-mac
+          path: build/mac
+
       - uses: actions/upload-artifact@v4
         with:
           name: moving-day-chaos-android
@@ -112,6 +124,7 @@ jobs:
           mkdir -p build/itch-android && cp build/moving-day-chaos.apk build/itch-android/
           ./butler/butler push build/itch-android "$ITCH_GAME:android" --userversion "$VERSION-${GITHUB_RUN_NUMBER}"
           ./butler/butler push build/windows "$ITCH_GAME:windows" --userversion "$VERSION-${GITHUB_RUN_NUMBER}"
+          ./butler/butler push build/mac/MovingDayChaos.zip "$ITCH_GAME:mac" --userversion "$VERSION-${GITHUB_RUN_NUMBER}"
 
       - name: Publish as the "android-latest" release
         env:

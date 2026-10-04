@@ -23,6 +23,7 @@ static func build(root: Node3D, m: Dictionary) -> TruckZone:
 	var door_h: float = house.door_height
 
 	var ground := _static_box(root, Vector3(0, -0.5, 8), Vector3(80, 1, 80), Color("eef6fb") if m.get("ice", false) else Palette.GRASS)
+	Scenery.texture_ground(ground, m.get("ice", false))
 	if m.get("ice", false):
 		var pm := PhysicsMaterial.new()
 		pm.friction = 0.05
@@ -34,14 +35,15 @@ static func build(root: Node3D, m: Dictionary) -> TruckZone:
 	for f: Dictionary in floors:
 		var a := Vector2(f.min[0], f.min[1])
 		var b := Vector2(f.max[0], f.max[1])
-		_visual_box(root, Vector3((a.x + b.x) * 0.5, 0.01, (a.y + b.y) * 0.5), Vector3(b.x - a.x, 0.02, b.y - a.y), Color(String(f.color)))
+		var fl := _visual_box(root, Vector3((a.x + b.x) * 0.5, 0.01, (a.y + b.y) * 0.5), Vector3(b.x - a.x, 0.02, b.y - a.y), Color(String(f.color)))
+		Scenery.texture_floor(fl)
 
 	var wall_a := Palette.WALLS[0]
 	var wall_b := Palette.WALLS[1]
-	_wall_x(root, mn.y, mn.x, mx.x, h, t, wall_a)  # back
-	_wall_z(root, mn.x, mn.y, mx.y, h, t, wall_a)  # left
-	_wall_z(root, mx.x, mn.y, mx.y, h, t, wall_b)  # right
-	_wall_x(root, mx.y, mn.x, mx.x, h, t, wall_b, house.front_door_x, house.front_door_width, door_h)  # front
+	_wall_x(root, mn.y, mn.x, mx.x, h, t, wall_a, NAN, 0.0, 0.0, -1.0)  # back
+	_wall_z(root, mn.x, mn.y, mx.y, h, t, wall_a, NAN, 0.0, 0.0, -1.0)  # left
+	_wall_z(root, mx.x, mn.y, mx.y, h, t, wall_b, NAN, 0.0, 0.0, 1.0)  # right
+	_wall_x(root, mx.y, mn.x, mx.x, h, t, wall_b, house.front_door_x, house.front_door_width, door_h, 1.0)  # front
 	var walls: Array = house.get("walls", [])
 	if house.has("interior_wall_x"):
 		walls = walls + [{"axis": "z", "at": house.interior_wall_x, "from": mn.y, "to": mx.y,
@@ -68,7 +70,7 @@ static func build(root: Node3D, m: Dictionary) -> TruckZone:
 	var path_x := (door_x + float(truck.center_x)) * 0.5
 	_visual_box(root, Vector3(path_x, 0.012, mx.y + path_len * 0.5), Vector3(absf(door_x - float(truck.center_x)) + 2.0, 0.02, path_len + 0.4), Palette.PAVEMENT)
 	_visual_box(root, Vector3(0, 0.008, rear + 2.0), Vector3(80, 0.02, 9.0), Color("6f6f78"))  # street
-	_trees(root, mn, mx, rear)
+	Scenery.build(root, m, mn, mx, door_x, truck)
 	return _truck(root, truck)
 
 
@@ -131,7 +133,8 @@ static func _truck(root: Node3D, truck: Dictionary) -> TruckZone:
 	var size := Vector3(truck.ramp_width, 0.08, slope.length())
 	_add_box_shape(ramp, size, Color("9aa0a8"))
 	ramp.position = Vector3(cx, bed * 0.5 - 0.04, rear - ramp_len * 0.5)
-	ramp.rotation = Vector3(atan2(bed, ramp_len), 0, 0)
+	# Negative pitch: the truck end (+Z) rises to the bed, the street end rests on the ground.
+	ramp.rotation = Vector3(-atan2(bed, ramp_len), 0, 0)
 	root.add_child(ramp)
 
 	var zone := TruckZone.new()
@@ -141,37 +144,55 @@ static func _truck(root: Node3D, truck: Dictionary) -> TruckZone:
 	return zone
 
 
-static func _trees(root: Node3D, mn: Vector2, mx: Vector2, rear: float) -> void:
-	var spots := [Vector3(mn.x - 3.5, 0, mn.y + 1), Vector3(mn.x - 3.0, 0, mx.y + 3), Vector3(mx.x + 3.5, 0, mn.y + 2),
-		Vector3(mx.x + 3.0, 0, mx.y + 1), Vector3((mn.x + mx.x) * 0.5 - 4, 0, mn.y - 4), Vector3((mn.x + mx.x) * 0.5 + 4, 0, mn.y - 4)]
-	for p: Vector3 in spots:
-		if p.z > rear - 3.0:
-			continue
-		_static_box(root, p + Vector3(0, 1.0, 0), Vector3(0.35, 2.0, 0.35), Color("8a5a36"))
-		var crown := MeshInstance3D.new()
-		var sm := SphereMesh.new()
-		sm.radius = 1.3
-		sm.height = 2.3
-		sm.material = _mat(Color("5fb85a"))
-		crown.mesh = sm
-		crown.position = p + Vector3(0, 2.8, 0)
-		root.add_child(crown)
-
-
-## Wall running along X at depth z, from x0 to x1, with an optional door gap centred at door_c.
-static func _wall_x(root: Node3D, z: float, x0: float, x1: float, h: float, t: float, color: Color, door_c := NAN, door_w := 0.0, door_h := 0.0) -> void:
+## Outer wall running along X at depth z, from x0 to x1, with an optional door gap centred at
+## door_c; `outward` (+1/-1 along Z) is the street side, where the windows go.
+static func _wall_x(root: Node3D, z: float, x0: float, x1: float, h: float, t: float, color: Color, door_c := NAN, door_w := 0.0, door_h := 0.0, outward := 1.0) -> void:
 	for seg in _segments(x0, x1, door_c, door_w):
-		_static_box(root, Vector3((seg.x + seg.y) * 0.5, h * 0.5, z), Vector3(seg.y - seg.x + t, h, t), color, true)
+		var body := _static_box(root, Vector3((seg.x + seg.y) * 0.5, h * 0.5, z), Vector3(seg.y - seg.x + t, h, t), color, true)
+		_add_windows(body, seg.y - seg.x, t, outward, true)
 	if not is_nan(door_c):
 		_static_box(root, Vector3(door_c, (h + door_h) * 0.5, z), Vector3(door_w, h - door_h, t), color, true)
 
 
-## Wall running along Z at x, from z0 to z1, with an optional door gap.
-static func _wall_z(root: Node3D, x: float, z0: float, z1: float, h: float, t: float, color: Color, door_c := NAN, door_w := 0.0, door_h := 0.0) -> void:
+## Outer wall running along Z at x, from z0 to z1, with an optional door gap.
+static func _wall_z(root: Node3D, x: float, z0: float, z1: float, h: float, t: float, color: Color, door_c := NAN, door_w := 0.0, door_h := 0.0, outward := 1.0) -> void:
 	for seg in _segments(z0, z1, door_c, door_w):
-		_static_box(root, Vector3(x, h * 0.5, (seg.x + seg.y) * 0.5), Vector3(t, h, seg.y - seg.x + t), color, true)
+		var body := _static_box(root, Vector3(x, h * 0.5, (seg.x + seg.y) * 0.5), Vector3(t, h, seg.y - seg.x + t), color, true)
+		_add_windows(body, seg.y - seg.x, t, outward, false)
 	if not is_nan(door_c):
 		_static_box(root, Vector3(x, (h + door_h) * 0.5, door_c), Vector3(t, h - door_h, door_w), color, true)
+
+
+## Windows (frame + glass + sill) on the outside face of a wall segment, every ~3 m.
+static func _add_windows(body: StaticBody3D, length: float, t: float, outward: float, along_x: bool) -> void:
+	var count := int((length - 0.6) / 3.0)
+	if count <= 0:
+		return
+	for i in count:
+		var offset := (i - (count - 1) * 0.5) * (length / count)
+		var face := t * 0.5 + 0.02
+		var frame_pos := Vector3(offset, 0.25, face * outward) if along_x else Vector3(face * outward, 0.25, offset)
+		var frame_size := Vector3(1.1, 0.95, 0.04) if along_x else Vector3(0.04, 0.95, 1.1)
+		var glass_size := Vector3(0.9, 0.75, 0.05) if along_x else Vector3(0.05, 0.75, 0.9)
+		var sill_pos := frame_pos + Vector3(0, -0.52, 0.04 * outward if along_x else 0.0) + (Vector3.ZERO if along_x else Vector3(0.04 * outward, 0, 0))
+		var sill_size := Vector3(1.25, 0.07, 0.12) if along_x else Vector3(0.12, 0.07, 1.25)
+		add_detail(body, frame_pos, frame_size, Color("fff8ee"))
+		add_detail(body, frame_pos + (Vector3(0, 0, 0.01 * outward) if along_x else Vector3(0.01 * outward, 0, 0)), glass_size, Color("9fd3f0"))
+		add_detail(body, sill_pos, sill_size, Color("fff8ee"))
+
+
+## Visual-only box attached to a wall body; its material fades with the wall (PlayerRig).
+static func add_detail(body: StaticBody3D, pos: Vector3, size: Vector3, color: Color) -> void:
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = size
+	bm.material = _mat(color)
+	mi.mesh = bm
+	mi.position = pos
+	body.add_child(mi)
+	var extra: Array = body.get_meta("extra_materials", [])
+	extra.append(bm.material)
+	body.set_meta("extra_materials", extra)
 
 
 static func _wall_x_doors(root: Node3D, z: float, x0: float, x1: float, h: float, t: float, color: Color, doors: Array, door_h: float) -> void:
@@ -218,6 +239,8 @@ static func _static_box(root: Node3D, pos: Vector3, size: Vector3, color: Color,
 	_add_box_shape(body, size, color)
 	if fade:
 		body.add_to_group(FADE_GROUP)
+		# White cap along the top edge: the dollhouse cut reads as a finished wall.
+		add_detail(body, Vector3(0, size.y * 0.5 + 0.03, 0), Vector3(size.x + 0.04, 0.06, size.z + 0.04), Color("fff8ee"))
 	body.position = pos
 	root.add_child(body)
 	return body
@@ -238,7 +261,7 @@ static func _add_box_shape(body: StaticBody3D, size: Vector3, color: Color) -> v
 	body.set_meta("material", bm.material)
 
 
-static func _visual_box(root: Node3D, pos: Vector3, size: Vector3, color: Color) -> void:
+static func _visual_box(root: Node3D, pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var bm := BoxMesh.new()
 	bm.size = size
@@ -246,6 +269,7 @@ static func _visual_box(root: Node3D, pos: Vector3, size: Vector3, color: Color)
 	mi.mesh = bm
 	mi.position = pos
 	root.add_child(mi)
+	return mi
 
 
 static func _mat(c: Color) -> StandardMaterial3D:
