@@ -55,7 +55,9 @@ func _ready() -> void:
 			await _frames(5)
 			Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 			match which:
-				"overview":
+				"overview", "thumb":
+					if which == "thumb":
+						_mission.hud.visible = false
 					_mission.rig.controls_mover = false
 					_mission.rig.set_process(false)
 					var hs: Dictionary = _mission.data.house

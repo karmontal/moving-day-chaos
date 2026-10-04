@@ -7,10 +7,11 @@ var mission: Mission
 
 var _root := Control.new()
 var _clock: Label
-var _stats := Control.new()
+var _money: Label
+var _loaded: Label
 var _list := VBoxContainer.new()
 var _rows := {}  # item_id -> Label (one row per kind of item: "Small box 1/3")
-var _hands: Array[Panel] = []
+var _hands: Array[TextureRect] = []
 var _hint: Label
 var _popup: Modal = null
 var _touch: TouchControls = null
@@ -23,40 +24,53 @@ func _ready() -> void:
 	_root.layout_direction = Control.LAYOUT_DIRECTION_LTR
 	add_child(_root)
 
-	_clock = UITheme.heading("", 72)
-	_clock.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
-	_clock.offset_top = 16
-	_clock.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_root.add_child(_clock)
+	var clock_holder := HBoxContainer.new()
+	clock_holder.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	clock_holder.offset_top = 18
+	clock_holder.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	clock_holder.alignment = BoxContainer.ALIGNMENT_CENTER
+	clock_holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(clock_holder)
+	_clock = UITheme.badge(clock_holder, "clock", 56)
 
-	# Money and loaded count are drawn at fixed spots: Labels positioned by hand slide
-	# off-screen in Arabic (RTL), as found in Kitchen Survivors.
-	_stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_stats.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_stats.draw.connect(_draw_stats)
-	_root.add_child(_stats)
+	var stats := VBoxContainer.new()
+	stats.position = Vector2(24, 22)
+	stats.add_theme_constant_override("separation", 12)
+	stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_root.add_child(stats)
+	_money = UITheme.badge(stats, "coin", 50)
+	_loaded = UITheme.badge(stats, "box", 34)
+	for b in stats.get_children():
+		(b as Control).size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
 
 	var panel := PanelContainer.new()
-	panel.add_theme_stylebox_override("panel", UITheme.box(Color(Palette.CREAM, 0.88), 24, 3))
+	var ps := UITheme.panel_box(Color(Palette.CREAM, 0.94), 26)
+	ps.set_border_width_all(5)
+	ps.border_width_bottom = 10
+	ps.content_margin_left = 20
+	ps.content_margin_right = 20
+	ps.content_margin_top = 8
+	ps.content_margin_bottom = 12
+	panel.add_theme_stylebox_override("panel", ps)
 	panel.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	panel.offset_left = -330
+	panel.offset_left = -340
 	panel.offset_right = -24
 	panel.offset_top = 24
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_root.add_child(panel)
 	_list.add_theme_constant_override("separation", 0)
 	panel.add_child(_list)
-	var title := Label.new()
-	title.text = "HUD_CHECKLIST"
-	title.add_theme_font_size_override("font_size", 28)
-	title.add_theme_color_override("font_color", Palette.ACCENT)
+	var title := UITheme.heading("HUD_CHECKLIST", 34, UITheme.CORAL, Palette.CHOCOLATE)
+	title.add_theme_constant_override("outline_size", 0)
+	title.add_theme_constant_override("shadow_offset_y", 0)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	_list.add_child(title)
 	for item in mission.items:
 		if _rows.has(item.item_id):
 			continue
 		var l := Label.new()
-		l.add_theme_font_size_override("font_size", 20 if TouchControls.wanted() else 24)
-		l.add_theme_constant_override("line_spacing", -6)
+		l.add_theme_font_size_override("font_size", 21 if TouchControls.wanted() else 25)
+		l.add_theme_constant_override("line_spacing", -8)
 		_list.add_child(l)
 		_rows[item.item_id] = l
 
@@ -69,10 +83,15 @@ func _ready() -> void:
 	hands_box.add_theme_constant_override("separation", 20)
 	_root.add_child(hands_box)
 	for i in 2:
-		var p := Panel.new()
-		p.custom_minimum_size = Vector2(60, 60)
-		hands_box.add_child(p)
-		_hands.append(p)
+		var g := TextureRect.new()
+		g.texture = UITheme.icon("glove_open")
+		g.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		g.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		g.custom_minimum_size = Vector2(64, 64)
+		g.flip_h = i == 0
+		g.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		hands_box.add_child(g)
+		_hands.append(g)
 
 	if TouchControls.wanted():
 		_touch = TouchControls.new()
@@ -85,14 +104,18 @@ func _ready() -> void:
 
 	_hint = Label.new()
 	_hint.text = "HUD_CONTROLS_TOUCH" if _touch else "HUD_CONTROLS"
-	_hint.add_theme_font_size_override("font_size", 22)
+	_hint.add_theme_font_size_override("font_size", 21)
 	_hint.add_theme_color_override("font_color", Palette.CREAM)
-	_hint.add_theme_color_override("font_outline_color", Palette.CHOCOLATE)
-	_hint.add_theme_constant_override("outline_size", 8)
+	var hint_bg := UITheme.box(Color(0.12, 0.07, 0.04, 0.55), 22, 0)
+	hint_bg.content_margin_top = 2
+	hint_bg.content_margin_bottom = 4
+	hint_bg.content_margin_left = 22
+	hint_bg.content_margin_right = 22
+	_hint.add_theme_stylebox_override("normal", hint_bg)
 	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_hint.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
-	_hint.offset_top = -64
-	_hint.offset_bottom = -16
+	_hint.offset_top = -58
+	_hint.offset_bottom = -14
 	_hint.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_root.add_child(_hint)
 
@@ -105,8 +128,9 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	var t := int(ceil(mission.time_left))
 	_clock.text = "%d:%02d" % [t / 60, t % 60]
-	_clock.add_theme_color_override("font_color", Palette.DANGER if t <= 30 else Palette.CREAM)
-	_stats.queue_redraw()
+	_clock.add_theme_color_override("font_color", Palette.DANGER.darkened(0.15) if t <= 30 else Palette.CHOCOLATE)
+	_money.text = "$%d" % mission.result().money
+	_loaded.text = "%d / %d" % [mission.delivered_count(), mission.items.size()]
 	var totals := {}  # item_id -> [total, delivered, broken]
 	for item in mission.items:
 		var c: Array = totals.get(item.item_id, [0, 0, 0])
@@ -131,18 +155,11 @@ func _process(_delta: float) -> void:
 	if player and is_instance_valid(player):
 		for i in 2:
 			var reaching := player.input.grab[i]
-			var c := Palette.HIVIS if player.is_holding(i) else (Palette.CREAM if reaching else Color(Palette.CREAM, 0.35))
-			_hands[i].add_theme_stylebox_override("panel", UITheme.box(c, 30, 4))
-
-
-func _draw_stats() -> void:
-	var font := UITheme.FONT
-	var money := "$%d" % mission.result().money
-	var count := tr("HUD_LOADED") % [mission.delivered_count(), mission.items.size()]
-	_stats.draw_string_outline(font, Vector2(36, 96), money, HORIZONTAL_ALIGNMENT_LEFT, -1, 60, 14, Palette.CHOCOLATE)
-	_stats.draw_string(font, Vector2(36, 96), money, HORIZONTAL_ALIGNMENT_LEFT, -1, 60, Palette.HIVIS)
-	_stats.draw_string_outline(font, Vector2(36, 152), count, HORIZONTAL_ALIGNMENT_LEFT, -1, 38, 10, Palette.CHOCOLATE)
-	_stats.draw_string(font, Vector2(36, 152), count, HORIZONTAL_ALIGNMENT_LEFT, -1, 38, Palette.CREAM)
+			var holding := player.is_holding(i)
+			_hands[i].texture = UITheme.icon("glove_fist" if holding or reaching else "glove_open")
+			_hands[i].modulate = Color.WHITE if holding else (Color(1, 1, 1, 0.85) if reaching else Color(1, 1, 1, 0.4))
+			_hands[i].scale = Vector2(1.15, 1.15) if holding else Vector2.ONE
+			_hands[i].pivot_offset = Vector2(32, 32)
 
 
 func _notification(what: int) -> void:
@@ -162,7 +179,7 @@ func _open_pause() -> void:
 	get_tree().paused = not mission.networked
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	_popup = Modal.open(_root, "PAUSE_TITLE")
-	_popup.add_button("BTN_RESUME", func() -> void: pass)
+	UITheme.primary(_popup.add_button("BTN_RESUME", func() -> void: pass))
 	if not mission.is_client:
 		_popup.add_button("BTN_RESTART", _restart)
 	_popup.add_button("SET_TITLE", func() -> void: SettingsPanel.open(_root), false)
@@ -185,16 +202,18 @@ func _show_results(r: Dictionary) -> void:
 	_popup.add_text(tr("RES_BROKEN") % [r.broken, r.penalty])
 	if r.bonus > 0:
 		_popup.add_text(tr("RES_BONUS") % r.bonus)
-	_popup.add_text(tr("RES_MONEY") % r.money, 52)
+	var paid := UITheme.heading(tr("RES_MONEY") % r.money, 60, Palette.CREAM, UITheme.CORAL_DARK)
+	_popup.content.add_child(paid)
 	_popup.add_text(tr("RES_WALLET") % Progress.wallet, 30)
 	if mission.is_client:
 		_popup.add_text(tr("LOBBY_WAITING_RETRY"), 30)
 	else:
 		if not mission.networked and r.stars > 0:
-			_popup.add_button("BTN_NEXT", func() -> void:
+			var next := _popup.add_button("BTN_NEXT", func() -> void:
 				Mission.selected = Progress.next_mission(mission.mission_id)
 				get_tree().paused = false
 				get_tree().reload_current_scene())
+			UITheme.primary(next)
 		_popup.add_button("BTN_RETRY", _restart)
 	_popup.add_button("BTN_MENU", _to_menu)
 	# Results stay up: closing with Esc would leave a frozen job behind.

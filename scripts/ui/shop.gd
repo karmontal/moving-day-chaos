@@ -7,18 +7,15 @@ var _cards := {}  # upgrade id -> {"pips": HBoxContainer, "buy": Button}
 
 func _ready() -> void:
 	theme = UITheme.build()
-	var bg := ColorRect.new()
-	bg.color = Palette.SKY
-	add_child(bg)
-	bg.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	UITheme.backdrop(self)
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 26)
 	box.alignment = BoxContainer.ALIGNMENT_CENTER
 	add_child(box)
 	box.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	box.add_child(UITheme.heading("SHOP_TITLE", 72, Palette.CREAM))
-	_wallet = UITheme.heading("", 52, Palette.HIVIS)
-	box.add_child(_wallet)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.y = 110
+	box.add_child(spacer)
 	var grid := GridContainer.new()
 	grid.columns = 2
 	grid.add_theme_constant_override("h_separation", 26)
@@ -28,14 +25,7 @@ func _ready() -> void:
 	box.add_child(center)
 	for id in Progress.upgrade_order():
 		grid.add_child(_card(id))
-	var back := Button.new()
-	back.text = "BTN_BACK"
-	back.custom_minimum_size = Vector2(360, 96)
-	back.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	back.pressed.connect(func() -> void:
-		AudioManager.play("click")
-		get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
-	box.add_child(back)
+	_wallet = UITheme.top_bar(self, "SHOP_TITLE", func() -> void: get_tree().change_scene_to_file("res://scenes/main_menu.tscn"))
 	_refresh()
 	var first: Button = _cards[Progress.upgrade_order()[0]].buy
 	first.grab_focus.call_deferred()
@@ -65,7 +55,8 @@ func _card(id: String) -> PanelContainer:
 	row.add_child(v)
 	var title := Label.new()
 	title.text = String(u.title)
-	title.add_theme_font_size_override("font_size", 36)
+	title.add_theme_font_override("font", UITheme.FONT_BOLD)
+	title.add_theme_font_size_override("font_size", 38)
 	v.add_child(title)
 	var desc := Label.new()
 	desc.text = String(u.title) + "_DESC"
@@ -76,8 +67,8 @@ func _card(id: String) -> PanelContainer:
 	var pips := HBoxContainer.new()
 	pips.add_theme_constant_override("separation", 8)
 	v.add_child(pips)
-	var buy := Button.new()
-	buy.custom_minimum_size = Vector2(170, 96)
+	var buy := UITheme.primary(Button.new())
+	buy.custom_minimum_size = Vector2(180, 100)
 	buy.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	buy.add_theme_font_size_override("font_size", 32)
 	buy.pressed.connect(func() -> void:
@@ -92,7 +83,7 @@ func _card(id: String) -> PanelContainer:
 
 
 func _refresh() -> void:
-	_wallet.text = tr("SHOP_WALLET") % Progress.wallet
+	_wallet.text = "$%d" % Progress.wallet
 	for id: String in _cards:
 		var c: Dictionary = _cards[id]
 		var pips: HBoxContainer = c.pips
@@ -100,8 +91,8 @@ func _refresh() -> void:
 			p.queue_free()
 		for i in Progress.max_level(id):
 			var pip := Panel.new()
-			pip.custom_minimum_size = Vector2(44, 18)
-			pip.add_theme_stylebox_override("panel", UITheme.box(Palette.GREEN if i < Progress.level(id) else Color("e6dccf"), 9, 3))
+			pip.custom_minimum_size = Vector2(50, 22)
+			pip.add_theme_stylebox_override("panel", UITheme.box(Palette.GREEN if i < Progress.level(id) else Color("e6dccf"), 11, 4))
 			pips.add_child(pip)
 		var buy: Button = c.buy
 		var cost := Progress.next_cost(id)

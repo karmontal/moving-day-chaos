@@ -39,8 +39,9 @@ func _ready() -> void:
 		var name_label := Label.new()
 		name_label.text = NAMES[i]
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_label.add_theme_font_size_override("font_size", 40)
-		name_label.add_theme_color_override("font_color", Palette.PLAYER_COLORS[i].darkened(0.25))
+		name_label.add_theme_font_override("font", UITheme.FONT_BOLD)
+		name_label.add_theme_font_size_override("font_size", 44)
+		name_label.add_theme_color_override("font_color", Palette.PLAYER_COLORS[i].darkened(0.3))
 		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		box.add_child(name_label)
 		var blurb := Label.new()
@@ -71,12 +72,23 @@ func refresh() -> void:
 		var is_taken := i in taken and i != selected
 		b.disabled = is_taken
 		b.button_pressed = i == selected
-		var bg := Palette.CREAM if i != selected else Palette.PLAYER_COLORS[i].lightened(0.55)
-		var border := Palette.PLAYER_COLORS[i] if i == selected else Color(Palette.CHOCOLATE, 0.4)
-		var style := UITheme.box(bg, 28, 8 if i == selected else 3, border)
-		for state in ["normal", "hover", "pressed", "focus", "hover_pressed"]:
+		var chosen := i == selected
+		var style := UITheme.panel_box(Palette.PLAYER_COLORS[i].lightened(0.6) if chosen else Palette.CREAM, 30)
+		style.content_margin_left = 0
+		style.content_margin_right = 0
+		if chosen:
+			style.border_color = Palette.PLAYER_COLORS[i].darkened(0.35)
+			style.set_border_width_all(9)
+			style.border_width_bottom = 16
+		var hover := style.duplicate() as StyleBoxFlat
+		hover.bg_color = style.bg_color.lightened(0.3)
+		for state in ["normal", "pressed", "hover_pressed"]:
 			b.add_theme_stylebox_override(state, style)
-		b.add_theme_stylebox_override("disabled", UITheme.box(Color("d8cfc4"), 28, 3, Color(Palette.CHOCOLATE, 0.2)))
+		b.add_theme_stylebox_override("hover", hover)
+		b.add_theme_stylebox_override("focus", UITheme.focus_ring())
+		b.add_theme_stylebox_override("disabled", UITheme.panel_box(Color("d8cfc4"), 30))
+		b.pivot_offset = b.custom_minimum_size * 0.5
+		b.scale = Vector2(1.06, 1.06) if chosen else Vector2.ONE
 		b.modulate = Color(1, 1, 1, 0.45) if is_taken else Color.WHITE
 
 

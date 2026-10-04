@@ -20,10 +20,7 @@ var _picker: CharacterPicker
 
 func _ready() -> void:
 	theme = UITheme.build()
-	var bg := ColorRect.new()
-	bg.color = Palette.SKY
-	add_child(bg)
-	bg.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	UITheme.backdrop(self)
 	_build_choose()
 	_build_room()
 	Net.players_changed.connect(_refresh_room)
@@ -44,13 +41,16 @@ func _ready() -> void:
 
 func _build_choose() -> void:
 	_choose.alignment = BoxContainer.ALIGNMENT_CENTER
-	_choose.add_theme_constant_override("separation", 22)
-	add_child(_choose)
-	_choose.set_anchors_and_offsets_preset(PRESET_CENTER)
-	_choose.custom_minimum_size = Vector2(900, 0)
-	_choose.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_choose.grow_vertical = Control.GROW_DIRECTION_BOTH
-	_choose.add_child(UITheme.heading("LOBBY_TITLE", 80, Palette.CREAM))
+	_choose.add_theme_constant_override("separation", 16)
+	var center := CenterContainer.new()
+	center.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	add_child(center)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(960, 0)
+	center.add_child(panel)
+	panel.add_child(_choose)
+	_choose.visibility_changed.connect(func() -> void: center.visible = _choose.visible)
+	_choose.add_child(UITheme.ribbon("LOBBY_TITLE", 60))
 	var name_row := HBoxContainer.new()
 	var name_label := Label.new()
 	name_label.text = "LOBBY_NAME"
@@ -64,10 +64,11 @@ func _build_choose() -> void:
 	if Net.online_available():
 		var online_title := Label.new()
 		online_title.text = "LOBBY_INTERNET"
-		online_title.add_theme_color_override("font_color", Palette.CHOCOLATE)
+		online_title.add_theme_color_override("font_color", UITheme.CORAL_DARK)
+		online_title.add_theme_font_override("font", UITheme.FONT_BOLD)
 		_choose.add_child(online_title)
 		var online_row := HBoxContainer.new()
-		online_row.add_child(_button("LOBBY_HOST_ONLINE", _host_online))
+		online_row.add_child(UITheme.primary(_button("LOBBY_HOST_ONLINE", _host_online)))
 		_code_edit.placeholder_text = "ABC123"
 		_code_edit.max_length = 8
 		_code_edit.custom_minimum_size.x = 220
@@ -80,12 +81,14 @@ func _build_choose() -> void:
 		_choose.add_child(online_row)
 	var lan_title := Label.new()
 	lan_title.text = "LOBBY_LAN"
-	lan_title.add_theme_color_override("font_color", Palette.CHOCOLATE)
+	lan_title.add_theme_color_override("font_color", UITheme.CORAL_DARK)
+	lan_title.add_theme_font_override("font", UITheme.FONT_BOLD)
 	_choose.add_child(lan_title)
-	_choose.add_child(_button("LOBBY_HOST", _host))
+	_choose.add_child(UITheme.primary(_button("LOBBY_HOST", _host)))
 	var found := Label.new()
 	found.text = "LOBBY_FOUND"
-	found.add_theme_color_override("font_color", Palette.CHOCOLATE)
+	found.add_theme_color_override("font_color", UITheme.CORAL_DARK)
+	found.add_theme_font_override("font", UITheme.FONT_BOLD)
 	_choose.add_child(found)
 	_hosts_box.add_theme_constant_override("separation", 10)
 	_choose.add_child(_hosts_box)
@@ -112,7 +115,7 @@ func _build_room() -> void:
 	_room.add_theme_constant_override("separation", 26)
 	add_child(_room)
 	_room.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
-	_room.add_child(UITheme.heading("LOBBY_PICK", 64, Palette.CREAM))
+	_room.add_child(UITheme.heading("LOBBY_PICK", 70))
 	_code_label = UITheme.heading("", 56, Palette.HIVIS)
 	_room.add_child(_code_label)
 	_picker = CharacterPicker.new()
@@ -143,7 +146,7 @@ func _build_room() -> void:
 		_level_pick.add_item(tr(String(Data.mission(id).get("title", id))))
 	level_row.add_child(_level_pick)
 	side.add_child(level_row)
-	_start = _button("LOBBY_START", func() -> void: Net.start_game(_level_ids[maxi(0, _level_pick.selected)]))
+	_start = UITheme.primary(_button("LOBBY_START", func() -> void: Net.start_game(_level_ids[maxi(0, _level_pick.selected)])))
 	side.add_child(_start)
 	side.add_child(_button("LOBBY_LEAVE", func() -> void:
 		Net.leave()
