@@ -81,11 +81,17 @@ jobs:
         if: env.HAS_SIGNING != 'true'
         run: |
           # Device build: Godot's simulator library is x86_64-only, the runners are Apple Silicon.
-          set -o pipefail
+          # The step's result is xcodebuild's own exit code (not the log filter's).
           cd build/ios
+          set +e
           xcodebuild -project MovingDayChaos.xcodeproj -scheme MovingDayChaos -sdk iphoneos \
             -destination 'generic/platform=iOS' -configuration Release \
-            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -quiet build 2>&1 | grep -vE "^ld: warning|warning:" | tail -30
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -quiet build > xcodebuild.log 2>&1
+          code=$?
+          grep -vE "^ld: warning|warning:" xcodebuild.log | tail -30
+          echo "xcodebuild exit code: $code"
+          ls -la ~/Library/Developer/Xcode/DerivedData/*/Build/Products/Release-iphoneos/ 2>/dev/null | head
+          exit $code
 
       - uses: actions/upload-artifact@v4
         with:
