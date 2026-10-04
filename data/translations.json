@@ -494,5 +494,61 @@
   "LOBBY_LEVEL": {
     "en": "Job:",
     "ar": "المهمة:"
+  },
+  "BTN_SHOP": {
+    "en": "Company shop",
+    "ar": "متجر الشركة"
+  },
+  "SHOP_TITLE": {
+    "en": "Company shop",
+    "ar": "متجر الشركة"
+  },
+  "SHOP_WALLET": {
+    "en": "Company bank: $%d",
+    "ar": "رصيد الشركة: $%d"
+  },
+  "SHOP_MAX": {
+    "en": "MAX",
+    "ar": "الأقصى"
+  },
+  "MENU_WALLET": {
+    "en": "Bank: $%d",
+    "ar": "الرصيد: $%d"
+  },
+  "RES_WALLET": {
+    "en": "Company bank: $%d — spend it in the shop!",
+    "ar": "رصيد الشركة: $%d — اصرفه في المتجر!"
+  },
+  "UPG_GLOVES": {
+    "en": "Grippy gloves",
+    "ar": "قفازات لاصقة"
+  },
+  "UPG_GLOVES_DESC": {
+    "en": "Stronger hands: lift heavy furniture more easily (+15% per level).",
+    "ar": "إيدين أقوى: ترفع العفش الثقيل بسهولة (+15% لكل مستوى)."
+  },
+  "UPG_BOOTS": {
+    "en": "Turbo boots",
+    "ar": "جزمة توربو"
+  },
+  "UPG_BOOTS_DESC": {
+    "en": "Walk faster between the house and the truck (+8% per level).",
+    "ar": "تمشي أسرع بين البيت والشاحنة (+8% لكل مستوى)."
+  },
+  "UPG_CLOCK": {
+    "en": "Overtime deal",
+    "ar": "اتفاق وقت إضافي"
+  },
+  "UPG_CLOCK_DESC": {
+    "en": "The customer waits longer: +20 seconds on every job per level.",
+    "ar": "الزبون بيستنى أكثر: +20 ثانية لكل مهمة بكل مستوى."
+  },
+  "UPG_WRAP": {
+    "en": "Bubble wrap",
+    "ar": "نايلون فقاعات"
+  },
+  "UPG_WRAP_DESC": {
+    "en": "Furniture survives harder bumps before denting or breaking (+20% per level).",
+    "ar": "العفش بيتحمل خبطات أقوى قبل ما ينطعج أو ينكسر (+20% لكل مستوى)."
   }
 }

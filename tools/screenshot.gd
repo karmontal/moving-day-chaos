@@ -21,6 +21,11 @@ func _ready() -> void:
 		Mission.selected = which.get_slice(":", 1)
 		which = which.get_slice(":", 0)
 	match which:
+		"shop":
+			Progress.wallet = 480
+			Progress.upgrades = {"gloves": 1, "boots": 3}
+			add_child(load("res://scenes/shop.tscn").instantiate())
+			await _frames(30)
 		"levels":
 			add_child(load("res://scenes/level_select.tscn").instantiate())
 			await _frames(30)
@@ -59,6 +64,15 @@ func _ready() -> void:
 					_mission.rig.global_position = c
 					_mission.rig.rotation = Vector3(-0.85, 0.45, 0)
 					_mission.rig.spring.spring_length = 9.0 + extent * 1.1
+					_mission.rig.spring.collision_mask = 0
+				"truck", "truck_back":
+					_mission.rig.controls_mover = false
+					_mission.rig.set_process(false)
+					var t: Dictionary = _mission.data.truck
+					var tc := Vector3(t.center_x, 1.4, t.rear_z + t.length * 0.5 + 1.0)
+					_mission.rig.global_position = tc
+					_mission.rig.rotation = Vector3(-0.3, -2.3 if which == "truck" else PI - 0.6, 0)
+					_mission.rig.spring.spring_length = 9.0
 					_mission.rig.spring.collision_mask = 0
 				"sofa":
 					await _sofa_scene()

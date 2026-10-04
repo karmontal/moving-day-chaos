@@ -71,7 +71,7 @@ static func build(root: Node3D, m: Dictionary) -> TruckZone:
 	_visual_box(root, Vector3(path_x, 0.012, mx.y + path_len * 0.5), Vector3(absf(door_x - float(truck.center_x)) + 2.0, 0.02, path_len + 0.4), Palette.PAVEMENT)
 	_visual_box(root, Vector3(0, 0.008, rear + 2.0), Vector3(80, 0.02, 9.0), Color("6f6f78"))  # street
 	Scenery.build(root, m, mn, mx, door_x, truck)
-	return _truck(root, truck)
+	return TruckBuilder.build(root, truck)
 
 
 static func _environment(root: Node3D, theme := "day") -> void:
@@ -94,54 +94,6 @@ static func _environment(root: Node3D, theme := "day") -> void:
 	root.add_child(sun)
 
 
-static func _truck(root: Node3D, truck: Dictionary) -> TruckZone:
-	var cx: float = truck.center_x
-	var rear: float = truck.rear_z
-	var length: float = truck.length
-	var width: float = truck.width
-	var bed: float = truck.bed_height
-	var zc := rear + length * 0.5
-	var wt := 0.12
-	_static_box(root, Vector3(cx, bed * 0.5, zc), Vector3(width, bed, length), Palette.TRUCK)
-	_static_box(root, Vector3(cx - width * 0.5 + wt * 0.5, bed + TRUCK_WALL_HEIGHT * 0.5, zc), Vector3(wt, TRUCK_WALL_HEIGHT, length), Palette.TRUCK, true)
-	_static_box(root, Vector3(cx + width * 0.5 - wt * 0.5, bed + TRUCK_WALL_HEIGHT * 0.5, zc), Vector3(wt, TRUCK_WALL_HEIGHT, length), Palette.TRUCK, true)
-	_static_box(root, Vector3(cx, bed + TRUCK_WALL_HEIGHT * 0.5, rear + length - wt * 0.5), Vector3(width, TRUCK_WALL_HEIGHT, wt), Palette.TRUCK, true)
-	# Company stripe on both sides.
-	for s in [-1, 1]:
-		_visual_box(root, Vector3(cx + s * (width * 0.5 + 0.005), bed + 0.9, zc), Vector3(0.02, 0.35, length - 0.4), Palette.PLAYER_COLORS[0])
-	# Cab.
-	_static_box(root, Vector3(cx, 1.2, rear + length + 1.0), Vector3(width, 1.9, 1.9), Palette.PLAYER_COLORS[1], true)
-	_visual_box(root, Vector3(cx, 1.65, rear + length + 1.96), Vector3(width - 0.3, 0.6, 0.04), Color("bfe6ff"))
-	for wz in [rear + 0.8, rear + length - 0.6, rear + length + 1.2]:
-		for s in [-1, 1]:
-			var wheel := MeshInstance3D.new()
-			var cm := CylinderMesh.new()
-			cm.top_radius = 0.42
-			cm.bottom_radius = 0.42
-			cm.height = 0.3
-			cm.material = _mat(Color("2b2d38"))
-			wheel.mesh = cm
-			wheel.rotation_degrees = Vector3(0, 0, 90)
-			wheel.position = Vector3(cx + s * (width * 0.5 + 0.05), 0.42, wz)
-			root.add_child(wheel)
-	# Ramp from the street up to the bed.
-	var ramp_len: float = truck.ramp_length
-	var slope := Vector2(ramp_len, bed)
-	var ramp := StaticBody3D.new()
-	ramp.collision_layer = 1 << (LAYER_WORLD - 1)
-	ramp.collision_mask = 0
-	var size := Vector3(truck.ramp_width, 0.08, slope.length())
-	_add_box_shape(ramp, size, Color("9aa0a8"))
-	ramp.position = Vector3(cx, bed * 0.5 - 0.04, rear - ramp_len * 0.5)
-	# Negative pitch: the truck end (+Z) rises to the bed, the street end rests on the ground.
-	ramp.rotation = Vector3(-atan2(bed, ramp_len), 0, 0)
-	root.add_child(ramp)
-
-	var zone := TruckZone.new()
-	zone.size = Vector3(width - wt * 2.0, TRUCK_WALL_HEIGHT + 0.6, length - wt)
-	zone.position = Vector3(cx, bed + zone.size.y * 0.5, rear + zone.size.z * 0.5)
-	root.add_child(zone)
-	return zone
 
 
 ## Outer wall running along X at depth z, from x0 to x1, with an optional door gap centred at
@@ -229,6 +181,10 @@ static func _segments(a: float, b: float, door_c: float, door_w: float) -> Array
 		return [Vector2(a, b)]
 	# The half-thickness overlap added by the callers must not eat into the door gap.
 	return [Vector2(a, door_c - door_w * 0.5 - 0.1), Vector2(door_c + door_w * 0.5 + 0.1, b)]
+
+
+static func static_box(root: Node3D, pos: Vector3, size: Vector3, color: Color, fade := false) -> StaticBody3D:
+	return _static_box(root, pos, size, color, fade)
 
 
 ## `fade`: tall pieces (walls, truck sides) go see-through when they hide the player (PlayerRig).

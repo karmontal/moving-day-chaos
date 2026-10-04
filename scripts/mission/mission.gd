@@ -24,6 +24,8 @@ var movers: Array[Mover] = []
 var rig: PlayerRig = null
 var hud: Hud = null
 var time_left := 0.0
+## Shop levels that help the whole team (clock, bubble wrap).
+var team_upgrades := {}
 var elapsed := 0.0
 var is_finished := false
 var delivered := {}  # Grabbable -> true
@@ -49,19 +51,22 @@ func _ready() -> void:
 	elif local_player and Data.missions.has(selected):
 		mission_id = selected
 	data = Data.mission(mission_id)
-	time_left = data.time
+	networked = Net.active and Net.in_game
+	is_client = networked and not Net.is_host()
+	# Team upgrades (extra time, bubble wrap) come from whoever runs the job: the host online.
+	team_upgrades = Progress.clean_levels(Net.players.get(1, {}).get("upgrades", {}) if networked else Progress.upgrades)
+	time_left = data.time + Progress.effect("clock", team_upgrades.clock)
 	zone = LevelBuilder.build(self, data)
 	_spawn_items(data.items)
 	var spawn := Vector3(data.spawn[0], 0.0, data.spawn[1])
-	networked = Net.active and Net.in_game
-	is_client = networked and not Net.is_host()
 	var player: Mover
 	if networked:
 		player_count = Net.players.size()
 		var order := Net.peer_order()
 		for i in order.size():
 			var id: int = order[i]
-			var m := spawn_mover(spawn + Vector3((i - (order.size() - 1) * 0.5) * 1.1, 0, 0), int(Net.players[id].character), id)
+			var m := spawn_mover(spawn + Vector3((i - (order.size() - 1) * 0.5) * 1.1, 0, 0), int(Net.players[id].character), id,
+				Progress.clean_levels(Net.players[id].get("upgrades", {})))
 			if id == Net.my_id():
 				player = m
 		if is_client:
@@ -71,7 +76,7 @@ func _ready() -> void:
 				item.make_puppet()
 		Net.players_changed.connect(_on_players_changed)
 	else:
-		player = spawn_mover(spawn, Settings.character)
+		player = spawn_mover(spawn, Settings.character, 1, Progress.clean_levels(Progress.upgrades))
 	local_mover = player
 	for m in movers:
 		m.input.yaw = PI
@@ -88,15 +93,17 @@ func _ready() -> void:
 			Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 
-## character < 0 picks the next free colour; peer is the network owner (1 offline).
-func spawn_mover(feet: Vector3, character := -1, peer := 1) -> Mover:
+## character < 0 picks the next free colour; peer is the network owner (1 offline);
+## upgrades is that player's shop levels (gloves = strength, boots = speed).
+func spawn_mover(feet: Vector3, character := -1, peer := 1, upgrades := {}) -> Mover:
 	var m := Mover.new()
 	m.color_index = (character if character >= 0 else movers.size()) % Palette.PLAYER_COLORS.size()
 	m.peer_id = peer
 	m.name = "Mover%d" % movers.size()
 	add_child(m)
 	m.spawn_at(feet)
-	m.strength = float(Data.game.solo_strength) if player_count == 1 else 1.0
+	m.strength = (float(Data.game.solo_strength) if player_count == 1 else 1.0) * Progress.effect("gloves", int(upgrades.get("gloves", 0)))
+	m.speed = Progress.effect("boots", int(upgrades.get("boots", 0)))
 	movers.append(m)
 	return m
 
@@ -149,6 +156,7 @@ func _spawn_item(id: String, pos: Vector2, yaw_deg: float) -> void:
 	add_child(item)
 	item.global_position = Vector3(pos.x, item.bottom_offset() + 0.02, pos.y)
 	item.rotation.y = deg_to_rad(yaw_deg)
+	item.toughness *= Progress.effect("bubble_wrap", int(team_upgrades.get("bubble_wrap", 0)))
 	item.broke.connect(_on_item_broke)
 	_add_tag(item)
 	items.append(item)

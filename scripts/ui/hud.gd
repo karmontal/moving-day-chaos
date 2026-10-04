@@ -186,6 +186,7 @@ func _show_results(r: Dictionary) -> void:
 	if r.bonus > 0:
 		_popup.add_text(tr("RES_BONUS") % r.bonus)
 	_popup.add_text(tr("RES_MONEY") % r.money, 52)
+	_popup.add_text(tr("RES_WALLET") % Progress.wallet, 30)
 	if mission.is_client:
 		_popup.add_text(tr("LOBBY_WAITING_RETRY"), 30)
 	else:

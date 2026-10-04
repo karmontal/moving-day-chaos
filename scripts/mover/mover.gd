@@ -27,6 +27,8 @@ var strength := 1.0:
 		strength = v
 		for h in hands:
 			h.strength = v
+## Multiplies walking speed (shop boots).
+var speed := 1.0
 var hands: Array[Hand] = []
 var on_floor := false
 ## Walk cycle in radians; drives the waddle, the feet and the arm swing.
@@ -180,7 +182,7 @@ func stumble() -> void:
 func _walk(delta: float) -> void:
 	var wish := Basis(Vector3.UP, input.yaw) * Vector3(input.move.x, 0.0, input.move.y)
 	wish = wish.limit_length(1.0)
-	var desired := wish * float(_cfg.walk_speed)
+	var desired := wish * float(_cfg.walk_speed) * speed
 	var hv := Vector3(linear_velocity.x, 0.0, linear_velocity.z)
 	var limit := float(_cfg.max_move_force) * (1.0 if on_floor else float(_cfg.air_control))
 	if dizzy_time > 0.0:

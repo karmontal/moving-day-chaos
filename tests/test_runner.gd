@@ -14,6 +14,7 @@ func _ready() -> void:
 	seed(1234)
 	_test_audio_buses()
 	_test_data()
+	await _test_shop()
 	await _test_touch_controls()
 	await _test_grab_and_carry()
 	await _test_sofa_needs_two()
@@ -281,6 +282,51 @@ func _new_mission() -> Mission:
 	add_child(m)
 	await _wait(0.1)
 	return m
+
+
+func _test_shop() -> void:
+	var saved := [Progress.best.duplicate(true), Progress.wallet, Progress.upgrades.duplicate()]
+	Progress.upgrades = {}
+	Progress.wallet = 0
+	for id in Progress.upgrade_order():
+		var u: Dictionary = Data.upgrades[id]
+		check(tr(String(u.title)) != String(u.title), "upgrade title translated: " + id)
+		check(ResourceLoader.exists("res://assets/ui/%s.png" % u.icon), "upgrade icon exists: " + id)
+	Progress.record("test_job", 2, 140)
+	eq(Progress.wallet, 140, "job pay goes into the company bank")
+	Progress.record("test_job", 1, 60)
+	eq(Progress.wallet, 200, "pay from every job adds up")
+	eq(int(Progress.best.test_job.money), 140, "best score still kept separately")
+	check(Progress.buy("gloves"), "can buy gloves with $200")
+	eq(Progress.wallet, 80, "price taken from the bank")
+	eq(Progress.level("gloves"), 1, "gloves level 1")
+	check(not Progress.buy("gloves"), "cannot buy level 2 without the money")
+	Progress.wallet = 100000
+	for i in 5:
+		Progress.buy("boots")
+	eq(Progress.level("boots"), Progress.max_level("boots"), "boots stop at max level")
+	eq(Progress.next_cost("boots"), -1, "maxed upgrade has no price")
+	check(absf(Progress.effect("gloves", 3) - 1.45) < 0.001, "gloves level 3 = +45% strength")
+	check(absf(Progress.effect("clock", 2) - 40.0) < 0.001, "clock level 2 = +40 s")
+	var clean := Progress.clean_levels({"gloves": 99, "bogus": 3})
+	eq(int(clean.gloves), Progress.max_level("gloves"), "network levels are clamped")
+	check(not clean.has("bogus"), "unknown upgrades dropped")
+	# Upgrades change the job.
+	Progress.upgrades = {"gloves": 2, "boots": 1, "clock": 1, "bubble_wrap": 1}
+	var m := await _new_mission()
+	var mv: Mover = m.movers[0]
+	check(absf(mv.strength - float(Data.game.solo_strength) * 1.3) < 0.001, "gloves make the mover stronger")
+	check(absf(mv.speed - 1.08) < 0.001, "boots make the mover faster")
+	check(m.time_left > float(m.data.time) + 15.0, "clock adds time")
+	var plain := Grabbable.create(m.items[0].item_id)
+	check(absf(m.items[0].toughness - plain.toughness * 1.2) < 0.001, "bubble wrap toughens furniture")
+	plain.free()
+	m.queue_free()
+	await _wait(0.1)
+	Progress.best = saved[0]
+	Progress.wallet = saved[1]
+	Progress.upgrades = saved[2]
+	Progress.save()
 
 
 func _test_all_levels() -> void:

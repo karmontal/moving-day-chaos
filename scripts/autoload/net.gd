@@ -16,7 +16,7 @@ const MAX_PLAYERS := 4
 const DISCOVERY_INTERVAL := 1.0
 const HOST_TIMEOUT := 3.5
 
-## peer_id -> {"name": String, "character": int}
+## peer_id -> {"name": String, "character": int, "upgrades": {upgrade id: level}}
 var players := {}
 ## ip -> {"name": String, "players": int, "seen": float}
 var found_hosts := {}
@@ -66,7 +66,7 @@ func host() -> Error:
 		return err
 	multiplayer.multiplayer_peer = peer
 	active = true
-	players = {1: {"name": Settings.player_name, "character": Settings.character}}
+	players = {1: {"name": Settings.player_name, "character": Settings.character, "upgrades": Progress.upgrades.duplicate()}}
 	_broadcast = PacketPeerUDP.new()
 	_broadcast.set_broadcast_enabled(true)
 	_broadcast.set_dest_address("255.255.255.255", DISCOVERY_PORT)
@@ -117,7 +117,7 @@ func host_online() -> Error:
 	multiplayer.multiplayer_peer = peer
 	active = true
 	room_code = noray.oid
-	players = {1: {"name": Settings.player_name, "character": Settings.character}}
+	players = {1: {"name": Settings.player_name, "character": Settings.character, "upgrades": Progress.upgrades.duplicate()}}
 	players_changed.emit()
 	return OK
 
@@ -220,9 +220,9 @@ func set_character(c: int) -> void:
 	if not active:
 		return
 	if is_host():
-		_claim(1, Settings.player_name, c)
+		_claim(1, Settings.player_name, c, Progress.upgrades)
 	else:
-		_register.rpc_id(1, Settings.player_name, c)
+		_register.rpc_id(1, Settings.player_name, c, Progress.upgrades)
 
 
 func taken_characters(except_peer := -1) -> Array[int]:
@@ -282,7 +282,7 @@ func _process(delta: float) -> void:
 
 
 func _on_connected() -> void:
-	_register.rpc_id(1, Settings.player_name, Settings.character)
+	_register.rpc_id(1, Settings.player_name, Settings.character, Progress.upgrades)
 
 
 func _on_peer_connected(_id: int) -> void:
@@ -297,7 +297,7 @@ func _on_peer_disconnected(id: int) -> void:
 
 
 @rpc("any_peer", "reliable")
-func _register(player_name: String, character: int) -> void:
+func _register(player_name: String, character: int, upgrades: Dictionary) -> void:
 	if not is_host():
 		return
 	var id := multiplayer.get_remote_sender_id()
@@ -305,16 +305,16 @@ func _register(player_name: String, character: int) -> void:
 		# No joining mid-job in this version.
 		multiplayer.multiplayer_peer.disconnect_peer(id)
 		return
-	_claim(id, player_name, character)
+	_claim(id, player_name, character, upgrades)
 
 
 ## Host: records a player's choice, bumping them to a free character if it is taken.
-func _claim(id: int, player_name: String, character: int) -> void:
+func _claim(id: int, player_name: String, character: int, upgrades := {}) -> void:
 	var taken := taken_characters(id)
 	var c := clampi(character, 0, Palette.PLAYER_COLORS.size() - 1)
 	while c in taken:
 		c = (c + 1) % Palette.PLAYER_COLORS.size()
-	players[id] = {"name": player_name.left(16), "character": c}
+	players[id] = {"name": player_name.left(16), "character": c, "upgrades": Progress.clean_levels(upgrades)}
 	_sync_players.rpc(players)
 	players_changed.emit()
 

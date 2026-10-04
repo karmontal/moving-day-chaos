@@ -1,0 +1,6 @@
+{
+  "gloves": {"order": 1, "title": "UPG_GLOVES", "icon": "glove_fist", "costs": [120, 300, 650], "per_level": 0.15},
+  "boots": {"order": 2, "title": "UPG_BOOTS", "icon": "boot", "costs": [100, 260, 550], "per_level": 0.08},
+  "clock": {"order": 3, "title": "UPG_CLOCK", "icon": "clock", "costs": [150, 350, 700], "per_level": 20.0},
+  "bubble_wrap": {"order": 4, "title": "UPG_WRAP", "icon": "bubble_wrap", "costs": [140, 320, 680], "per_level": 0.2}
+}
