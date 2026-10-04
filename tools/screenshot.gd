@@ -27,6 +27,8 @@ func _ready() -> void:
 			add_child(load("res://scenes/shop.tscn").instantiate())
 			await _frames(30)
 		"levels":
+			# Show every card state: done, one star, open, locked.
+			Progress.best = {"tiny_studio": {"stars": 3, "money": 200}, "narrow_townhouse": {"stars": 1, "money": 90}}
 			add_child(load("res://scenes/level_select.tscn").instantiate())
 			await _frames(30)
 		"select":

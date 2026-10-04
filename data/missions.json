@@ -146,11 +146,11 @@
     "yaw": 200
    }
   ],
-  "order": 1,
+  "order": 5,
   "title": "LVL_STARTER"
  },
  "tiny_studio": {
-  "order": 2,
+  "order": 1,
   "title": "LVL_STUDIO",
   "time": 180,
   "spawn": [
@@ -248,7 +248,7 @@
   ]
  },
  "student_dorm": {
-  "order": 3,
+  "order": 7,
   "title": "LVL_DORM",
   "time": 270,
   "spawn": [
@@ -441,7 +441,7 @@
   ]
  },
  "grandmas_house": {
-  "order": 4,
+  "order": 8,
   "title": "LVL_GRANDMA",
   "time": 260,
   "spawn": [
@@ -591,7 +591,7 @@
   ]
  },
  "family_home": {
-  "order": 5,
+  "order": 10,
   "title": "LVL_FAMILY",
   "time": 330,
   "spawn": [
@@ -815,7 +815,7 @@
   ]
  },
  "office_move": {
-  "order": 6,
+  "order": 9,
   "title": "LVL_OFFICE",
   "time": 300,
   "spawn": [
@@ -949,7 +949,7 @@
   ]
  },
  "winter_cabin": {
-  "order": 7,
+  "order": 3,
   "title": "LVL_CABIN",
   "time": 240,
   "spawn": [
@@ -1069,7 +1069,7 @@
   ]
  },
  "narrow_townhouse": {
-  "order": 8,
+  "order": 2,
   "title": "LVL_TOWNHOUSE",
   "time": 330,
   "spawn": [
@@ -1227,7 +1227,7 @@
   ]
  },
  "music_shop": {
-  "order": 9,
+  "order": 6,
   "title": "LVL_MUSIC",
   "time": 300,
   "spawn": [
@@ -1346,7 +1346,7 @@
   ]
  },
  "aquarium_job": {
-  "order": 10,
+  "order": 4,
   "title": "LVL_AQUARIUM",
   "time": 240,
   "spawn": [

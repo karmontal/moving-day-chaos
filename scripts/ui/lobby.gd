@@ -141,7 +141,7 @@ func _build_room() -> void:
 	var level_label := Label.new()
 	level_label.text = "LOBBY_LEVEL"
 	level_row.add_child(level_label)
-	_level_ids = Progress.mission_order()
+	_level_ids = Progress.unlocked_missions()  # the host can only pick jobs they have opened
 	for id in _level_ids:
 		_level_pick.add_item(tr(String(Data.mission(id).get("title", id))))
 	level_row.add_child(_level_pick)

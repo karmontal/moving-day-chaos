@@ -109,6 +109,17 @@ static func mission_order() -> Array[String]:
 	return ids
 
 
+## A job opens once the job before it (in play order) has at least one star; the first is always open.
+func is_unlocked(mission_id: String) -> bool:
+	var order := mission_order()
+	var i := order.find(mission_id)
+	return i <= 0 or stars(order[i - 1]) >= 1
+
+
+func unlocked_missions() -> Array[String]:
+	return mission_order().filter(func(id: String) -> bool: return is_unlocked(id))
+
+
 static func next_mission(id: String) -> String:
 	var order := mission_order()
 	var i := order.find(id)

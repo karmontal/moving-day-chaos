@@ -550,5 +550,17 @@
   "UPG_WRAP_DESC": {
     "en": "Furniture survives harder bumps before denting or breaking (+20% per level).",
     "ar": "العفش بيتحمل خبطات أقوى قبل ما ينطعج أو ينكسر (+20% لكل مستوى)."
+  },
+  "LEVEL_LOCKED": {
+    "en": "Get a star on job %d to unlock",
+    "ar": "اجمع نجمة بالمهمة %d لتفتحها"
+  },
+  "COMING_SOON": {
+    "en": "Coming soon",
+    "ar": "قريبًا"
+  },
+  "COMING_SOON_DESC": {
+    "en": "More moving jobs are on the way!",
+    "ar": "مهام نقل جديدة في الطريق!"
   }
 }

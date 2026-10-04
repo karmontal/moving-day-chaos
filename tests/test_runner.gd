@@ -15,6 +15,7 @@ func _ready() -> void:
 	_test_audio_buses()
 	_test_data()
 	await _test_shop()
+	_test_unlocks()
 	await _test_touch_controls()
 	await _test_grab_and_carry()
 	await _test_sofa_needs_two()
@@ -326,6 +327,33 @@ func _test_shop() -> void:
 	Progress.best = saved[0]
 	Progress.wallet = saved[1]
 	Progress.upgrades = saved[2]
+	Progress.save()
+
+
+func _test_unlocks() -> void:
+	var saved := [Progress.best.duplicate(true), Progress.wallet]
+	var order := Progress.mission_order()
+	eq(order[0], "tiny_studio", "smallest job comes first")
+	eq(order[order.size() - 1], "mansion", "biggest job comes last")
+	var counts: Array[int] = []
+	for id in order:
+		var n := 0
+		for e: Dictionary in Data.mission(id).items:
+			n += int(e.get("count", 1))
+		counts.append(n)
+	eq(counts.min(), counts[0], "first job has the fewest items")
+	eq(counts.max(), counts[counts.size() - 1], "last job has the most items")
+	Progress.best = {}
+	check(Progress.is_unlocked(order[0]), "first job always open")
+	check(not Progress.is_unlocked(order[1]), "second job locked at the start")
+	eq(Progress.unlocked_missions().size(), 1, "only one job open at the start")
+	Progress.record(order[0], 0, 0)
+	check(not Progress.is_unlocked(order[1]), "zero stars does not unlock the next job")
+	Progress.record(order[0], 1, 50)
+	check(Progress.is_unlocked(order[1]), "one star unlocks the next job")
+	check(not Progress.is_unlocked(order[2]), "but not the one after")
+	Progress.best = saved[0]
+	Progress.wallet = saved[1]
 	Progress.save()
 
 
