@@ -2,8 +2,8 @@ name: iOS build
 
 # Runs on a macOS runner (Xcode). Started by hand from the Actions tab (macOS minutes are costly).
 #
-# Without Apple secrets: exports the Xcode project only and checks that it compiles for the
-# simulator (no signing needed) -> artifact "moving-day-chaos-ios-xcode".
+# Without Apple secrets: exports the Xcode project only and checks that it compiles for iPhone
+# (arm64, no signing needed) -> artifact "moving-day-chaos-ios-xcode".
 #
 # With these repository secrets it builds a signed .ipa and uploads it to TestFlight:
 #   IOS_TEAM_ID                  Apple Developer Team ID (10 characters)
@@ -77,12 +77,15 @@ jobs:
           "$GODOT" --headless --path . --export-release "iOS" build/ios/MovingDayChaos.ipa
           ls -la build/ios
 
-      - name: Compile check for the simulator (no signing)
+      - name: Compile check for iPhone (arm64, no signing)
         if: env.HAS_SIGNING != 'true'
         run: |
+          # Device build: Godot's simulator library is x86_64-only, the runners are Apple Silicon.
+          set -o pipefail
           cd build/ios
-          xcodebuild -project MovingDayChaos.xcodeproj -scheme MovingDayChaos -sdk iphonesimulator \
-            -configuration Release CODE_SIGNING_ALLOWED=NO -quiet build | tail -20
+          xcodebuild -project MovingDayChaos.xcodeproj -scheme MovingDayChaos -sdk iphoneos \
+            -destination 'generic/platform=iOS' -configuration Release \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO -quiet build 2>&1 | grep -vE "^ld: warning|warning:" | tail -30
 
       - uses: actions/upload-artifact@v4
         with:
