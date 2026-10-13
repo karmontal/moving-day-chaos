@@ -1,7 +1,8 @@
 name: Android build
 
 # Exports a signed APK + Windows + macOS (universal, ad-hoc signed) builds on every push to main (or by hand from the Actions tab).
-# The APK is published as the "android-latest" GitHub Release (download straight to a phone), and
+# The APK, a Windows zip and the macOS zip are published as the "android-latest" GitHub Release
+# (download straight to a phone; Actions artifacts are only kept for 2 days), and
 # both builds go to itch.io when the BUTLER_API_KEY secret and ITCH_GAME variable are set
 # (channels "android" and "windows").
 # Signing uses tools/android/debug.keystore (testing only). Before Google Play, create a private
@@ -98,16 +99,19 @@ jobs:
         with:
           name: moving-day-chaos-mac
           path: build/mac
+          retention-days: 2
 
       - uses: actions/upload-artifact@v4
         with:
           name: moving-day-chaos-android
           path: build/moving-day-chaos.apk
+          retention-days: 2
 
       - uses: actions/upload-artifact@v4
         with:
           name: moving-day-chaos-windows
           path: build/windows
+          retention-days: 2
 
       - name: Push to itch.io
         env:
@@ -131,6 +135,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           VERSION=$(grep '^config/version=' project.godot | cut -d'"' -f2)
-          NOTES="Test build v${VERSION} (build ${GITHUB_RUN_NUMBER}, ${GITHUB_SHA::7}). Download moving-day-chaos.apk on your Android phone and open it (allow installing from unknown sources)."
+          NOTES="Test build v${VERSION} (build ${GITHUB_RUN_NUMBER}, ${GITHUB_SHA::7}). Download moving-day-chaos.apk on your Android phone and open it (allow installing from unknown sources). Windows: MovingDayChaos-windows.zip, macOS: MovingDayChaos.zip."
+          (cd build/windows && zip -qr ../MovingDayChaos-windows.zip .)
           gh release delete android-latest --yes --cleanup-tag 2>/dev/null || true
-          gh release create android-latest build/moving-day-chaos.apk --title "Android test build v${VERSION} (#${GITHUB_RUN_NUMBER})" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
+          gh release create android-latest build/moving-day-chaos.apk build/MovingDayChaos-windows.zip build/mac/MovingDayChaos.zip --title "Test build v${VERSION} (#${GITHUB_RUN_NUMBER})" --notes "$NOTES" --prerelease --target "$GITHUB_SHA"
