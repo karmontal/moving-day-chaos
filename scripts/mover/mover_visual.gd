@@ -1,8 +1,8 @@
 class_name MoverVisual
 extends Node3D
-## Everything that makes a mover look silly, all procedural and visual-only (the physics body
-## stays an upright capsule): springy lean, waddle and bounce, squash & stretch, a lagging
-## bobblehead, googly pupils, stepping feet and dizzy stars. Uses an imported character model
+## How a mover looks, visual-only (the physics body stays an upright capsule): the model's walk
+## clip, stepping feet and dizzy stars. The body stays upright and steady (no lean, waddle,
+## bounce, squash or bobblehead). Uses an imported character model
 ## (assets/models/mover_<n>.glb) when one exists, otherwise primitive shapes.
 
 const MODEL_PATH := "res://assets/models/mover_%d.glb"
@@ -13,32 +13,21 @@ const ARM_BONES := ["LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand", "Right
 
 var mover: Mover
 
-var _body := Node3D.new()   # pivots at the feet: waddle, lean, squash
-var _head := Node3D.new()   # bobblehead (primitive look only)
+var _body := Node3D.new()   # pivots at the feet
+var _head := Node3D.new()   # head (primitive look only)
 var _pupils: Array[Node3D] = []
 var _feet: Array[Node3D] = []
 var _stars := Node3D.new()
 
-var _tilt := Vector2.ZERO     # x = pitch, y = roll
-var _tilt_vel := Vector2.ZERO
-var _squash := 0.0
-var _squash_vel := 0.0
-var _head_off := Vector3.ZERO
-var _head_vel := Vector3.ZERO
-var _pupil_off := Vector2.ZERO
-var _pupil_vel := Vector2.ZERO
 var _prev_vel := Vector3.ZERO
 var _was_on_floor := true
 var _fall_speed := 0.0
 var _time := 0.0
-var _head_base := Vector3.ZERO
 var _h := 1.55
 var _r := 0.34
 var _anim: AnimationPlayer = null
 var _walk_clip := ""
 var _skeleton: Skeleton3D = null
-var _head_bone := -1
-var _head_rest := Quaternion.IDENTITY
 var _arm_bones: Array[int] = [-1, -1]  # LeftArm, RightArm (upper arms)
 
 
@@ -56,7 +45,6 @@ func _ready() -> void:
 		_build_primitives(color)
 		_build_feet()
 	_build_stars()
-	mover.jumped.connect(func() -> void: _squash_vel += 5.0)
 
 
 func _process(delta: float) -> void:
@@ -73,57 +61,31 @@ func _process(delta: float) -> void:
 		_step(delta / steps, basis_inv * v, local_a)
 
 
-func _step(delta: float, local_v: Vector3, local_a: Vector3) -> void:
+func _step(delta: float, local_v: Vector3, _local_a: Vector3) -> void:
 	_time += delta
 	var v := mover.visual_velocity()
 	var hspeed := Vector2(local_v.x, local_v.z).length()
 	_process_anim(hspeed)
-	var waddle := clampf(hspeed / 4.0, 0.0, 1.0) * (1.0 if mover.on_floor else 0.3)
+	var stride := clampf(hspeed / 4.0, 0.0, 1.0) * (1.0 if mover.on_floor else 0.3)
 	var phase := mover.walk_phase
 
-	# Lean into motion on an underdamped spring, so stops and turns wobble.
-	var target := Vector2(clampf(local_v.z * 0.05 + local_a.z * 0.012, -0.45, 0.45),
-		clampf(-local_v.x * 0.05 - local_a.x * 0.012, -0.45, 0.45))
-	_tilt_vel += ((target - _tilt) * 140.0 - _tilt_vel * 8.0) * delta
-	_tilt += _tilt_vel * delta
-	var pitch := _tilt.x
-	var roll := _tilt.y + sin(phase) * 0.17 * waddle
-	var yaw := sin(phase) * 0.12 * waddle
-	if mover.dizzy_time > 0.0:
-		roll += sin(_time * 9.0) * 0.45
-		pitch += cos(_time * 7.0) * 0.3
-
-	# Squash on landing, stretch on take-off.
+	# Landing thud (sound only: the body stays upright and rigid).
 	if not mover.on_floor:
 		_fall_speed = maxf(_fall_speed, -v.y)
 	elif not _was_on_floor and _fall_speed > 1.5:
-		_squash_vel -= clampf(_fall_speed * 1.6, 0.0, 9.0)
 		AudioManager.play("boing", 0.15, -6.0, clampf(1.4 - _fall_speed * 0.08, 0.8, 1.3))
 	if mover.on_floor:
 		_fall_speed = 0.0
 	_was_on_floor = mover.on_floor
-	_squash_vel += (-_squash * 220.0 - _squash_vel * 11.0) * delta
-	_squash = clampf(_squash + _squash_vel * delta, -0.35, 0.35)
 
-	var bob := absf(sin(phase)) * 0.07 * waddle
-	_body.position = Vector3(0.0, -_h * 0.5 + bob, 0.0)
-	_body.rotation = Vector3(pitch, yaw, roll)
-	_body.scale = Vector3(1.0 - _squash * 0.5, 1.0 + _squash, 1.0 - _squash * 0.5)
+	_body.position = Vector3(0.0, -_h * 0.5, 0.0)
+	_body.rotation = Vector3.ZERO
+	_body.scale = Vector3.ONE
 
-	# Bobblehead and googly pupils lag behind the body's acceleration.
-	_head_vel += (-_head_off * 90.0 - _head_vel * 6.0 - local_a * 0.04) * delta
-	_head_off = (_head_off + _head_vel * delta).limit_length(0.12)
-	_head.position = _head_base + Vector3(_head_off.x, _head_off.y * 0.5, _head_off.z)
-	_head.rotation = Vector3(_head_off.z * 2.5, 0.0, -_head_off.x * 3.0)
-	_pupil_vel += (-_pupil_off * 160.0 - _pupil_vel * 5.0 - Vector2(local_a.x, -local_a.y) * 0.02) * delta
-	_pupil_off = (_pupil_off + _pupil_vel * delta).limit_length(0.022)
-	for i in _pupils.size():
-		_pupils[i].position = Vector3(_pupil_off.x, _pupil_off.y, 0.0)
-
-	# Little feet shuffle in step with the waddle.
+	# Feet step in time with the walk cycle (primitive look only).
 	for i in _feet.size():
 		var s := sin(phase + PI * i)
-		_feet[i].position = Vector3((-0.13 if i == 0 else 0.13), 0.05 + maxf(0.0, s) * 0.09 * waddle, -s * 0.16 * waddle)
+		_feet[i].position = Vector3((-0.13 if i == 0 else 0.13), 0.05 + maxf(0.0, s) * 0.09 * stride, -s * 0.16 * stride)
 
 	if _skeleton:
 		# Fold the model's own arms (modelled behind its back) away into the shoulders;
@@ -131,10 +93,6 @@ func _step(delta: float, local_v: Vector3, local_a: Vector3) -> void:
 		for b in _arm_bones:
 			if b >= 0:
 				_skeleton.set_bone_pose_scale(b, Vector3.ONE * 0.001)
-	if _skeleton and _head_bone >= 0:
-		# Bobblehead on the rigged model's head bone.
-		var wobble := Quaternion(Vector3.RIGHT, _head_off.z * 3.0) * Quaternion(Vector3.FORWARD, _head_off.x * 3.5)
-		_skeleton.set_bone_pose_rotation(_head_bone, _head_rest * wobble)
 	_stars.visible = mover.dizzy_time > 0.0
 	if _stars.visible:
 		_stars.rotation.y = _time * 6.0
@@ -156,7 +114,7 @@ func _process_anim(hspeed: float) -> void:
 			_anim.play(_walk_clip, 0.15)
 		_anim.speed_scale = clampf(hspeed / WALK_CLIP_SPEED, 0.6, 3.2)
 	elif _anim.is_playing():
-		# Standing still: back to the straight, front-facing rest pose (the springs keep it alive).
+		# Standing still: back to the straight, front-facing rest pose.
 		_anim.stop()
 		if _skeleton:
 			_skeleton.reset_bone_poses()
@@ -171,8 +129,6 @@ func _build_model(scene: PackedScene) -> void:
 	model.position = Vector3(-aabb.get_center().x * scale_f, -aabb.position.y * scale_f, -aabb.get_center().z * scale_f)
 	model.rotation.y = PI  # generated models face +Z; movers face -Z
 	_body.add_child(model)
-	_head_base = Vector3(0, _h, 0)
-	_body.add_child(_head)
 	_setup_animation(model)
 
 
@@ -184,10 +140,7 @@ func _setup_animation(model: Node) -> void:
 	var skeletons := model.find_children("*", "Skeleton3D", true, false)
 	if not skeletons.is_empty():
 		_skeleton = skeletons[0]
-		_head_bone = _skeleton.find_bone("Head")
 		_arm_bones = [_skeleton.find_bone("LeftArm"), _skeleton.find_bone("RightArm")]
-		if _head_bone >= 0:
-			_head_rest = _skeleton.get_bone_rest(_head_bone).basis.get_rotation_quaternion()
 	for anim_name in _anim.get_animation_list():
 		if anim_name.to_lower().contains("walk"):
 			_walk_clip = anim_name
@@ -217,7 +170,7 @@ func _build_primitives(color: Color) -> void:
 	zipper.position = Vector3(0, _h * 0.5 - 0.15, -_r + 0.005)
 	_body.add_child(zipper)
 
-	_head_base = Vector3(0, _h + 0.12, 0)
+	_head.position = Vector3(0, _h + 0.12, 0)
 	_body.add_child(_head)
 	_head.add_child(_mesh(_sphere(0.25), Palette.SKIN))
 	var hat := _mesh(_sphere(0.26, true), color.darkened(0.25))

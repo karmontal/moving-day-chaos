@@ -1,6 +1,6 @@
 class_name Mover
 extends RigidBody3D
-## A wobbly mover: a capsule body that walks with forces and two independent physical hands
+## A mover: a capsule body that walks with forces and two independent physical hands
 ## (see Hand). Driven only through `input`, so a local player, a bot, a test or (later) a
 ## network packet can control it the same way.
 
@@ -17,7 +17,7 @@ var color_index := 0
 var peer_id := 1
 ## On clients every mover is a puppet: the host simulates it and snapshots move it.
 var puppet := false
-## Velocity reported by the host for puppets (drives the silly animation).
+## Velocity reported by the host for puppets (drives the walk animation).
 var net_velocity := Vector3.ZERO
 ## Puppets: which hands the host says are holding something (for the touch buttons / HUD).
 var remote_holding: Array[bool] = [false, false]
@@ -31,7 +31,7 @@ var strength := 1.0:
 var speed := 1.0
 var hands: Array[Hand] = []
 var on_floor := false
-## Walk cycle in radians; drives the waddle, the feet and the arm swing.
+## Walk cycle in radians; drives the feet and the arm swing.
 var walk_phase := 0.0
 ## > 0 while knocked silly: barely any control and the hands let go.
 var dizzy_time := 0.0
