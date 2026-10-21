@@ -1,8 +1,10 @@
 # Moving Day Chaos 🛋️📦
 
-> **الحالة: المرحلة 1 — النموذج الأولي للفيزياء (لاعب واحد).** شخصية بيدين فيزيائيتين، مسك/حمل/لف العفش، قطع هشة تنكسر،
-> بيت من غرفتين وشاحنة، مؤقت ونجوم. السؤال اللي نختبره: **هل حمل العفش ممتع ومضحك؟**
-> **Status: Phase 1 — single-player physics prototype** (Godot 4.7 + Jolt). See "Play the prototype" below.
+> **الحالة: الإصدار 0.1.0 قابل للعب، والإصدار 0.2.0 (إعادة تصميم الشكل كامل) بدأ — شوف [`docs/RELEASE_0.2.0.md`](docs/RELEASE_0.2.0.md).**
+> الموجود الحين: 11 مهمة مرتبة بالصعوبة وتنفتح بالنجوم، لعب فردي أو جماعي (شبكة محلية أو عبر الإنترنت بكود غرفة)،
+> رصيد للشركة ومتجر ترقيات، 4 شخصيات، موسيقى، عربي/إنجليزي، ونسخ أندرويد وويندوز وماك (وآيفون يدوي) تنرفع على itch.io.
+> **Status: v0.1.0 playable** (11 jobs, LAN + internet co-op, company bank + upgrade shop, Android/Windows/macOS builds on itch.io).
+> **Next: v0.2.0 — full visual redesign** (environment, props, characters, movement). See `docs/RELEASE_0.2.0.md`.
 
 ## الفكرة باختصار
 لعبة جماعية فوضوية بفيزياء مضحكة لـ 1–4 لاعبين أونلاين على Steam: أنت وأصحابك عمّال شركة نقل عفش، لازم تنقلون أثاث بيت كامل للشاحنة قبل ما يخلص الوقت… والكنبة ما تبغى تطلع من الباب، والتلفزيون على وشك يطيح.
@@ -21,7 +23,7 @@ friends' "help".
 | **السعر / Price** | $5.99 + 4-pack "Moving Crew" bundle |
 | **مدة التطوير / Scope** | MVP ~8–10 weeks, Early Access ~4–6 months |
 
-## جرّب النموذج / Play the prototype
+## جرّب اللعبة / Play the game
 افتح المجلد في Godot 4.7 واضغط Play (أو `godot --path .`).
 
 | التحكم | Keyboard + mouse | Gamepad |
@@ -34,13 +36,14 @@ friends' "help".
 | قفز / Jump | Space | A |
 | إيقاف / Pause | Esc | Start |
 
-**📱 Android:** كل push على `main` يبني APK تلقائياً (GitHub Actions ← *Android build*) وينشره في
-[Releases → android-latest](https://github.com/karmontal/moving-day-chaos/releases/tag/android-latest).
+**📱 Android / 💻 Windows / 🍎 Mac:** كل push على `main` يبني النسخ تلقائياً (GitHub Actions ← *Android build*)
+ويرفعها على itch.io، والـ APK كمان في [Releases → android-latest](https://github.com/karmontal/moving-day-chaos/releases/tag/android-latest).
+نسخة الآيفون تنبني يدوياً من workflow *iOS*.
 افتح الرابط من الجوال، نزّل `moving-day-chaos.apk` وثبّته (اسمح بالتثبيت من مصادر غير معروفة).
 التحكم باللمس: اليسار للحركة، اسحب في اليمين لتنظر وترفع/تنزل الأيدي، وأزرار **امسك / يسرى / يمنى** تشتغل بالضغط مرة للمسك ومرة للإفلات.
 > النسخة موقّعة بمفتاح تجريبي (`tools/android/debug.keystore`). قبل Google Play لازم مفتاح رفع خاص يُحفظ في Secrets.
 
-**👥 أونلاين (المرحلة 2 — بدأت):** من القائمة ← **العب أونلاين** ← واحد يفتح غرفة والباقي يشوفونها تلقائياً
+**👥 أونلاين:** من القائمة ← **العب أونلاين** ← واحد يفتح غرفة والباقي يشوفونها تلقائياً
 لو على نفس الواي فاي (أو يدخلوا بالـ IP اللي يظهر عند المضيف). كل لاعب يختار شخصية (ما تتكرر)، والمضيف يبدأ.
 المضيف يشغّل الفيزياء كلها ويبعث لقطات ~30 مرة بالثانية؛ الباقي يبعثون حركتهم فقط. شغّال بين الكمبيوتر والأندرويد.
 **🌍 عبر الإنترنت (بكود الغرفة):** "افتح غرفة أونلاين" يعطيك كود من 6 حروف، وصاحبك يكتبه من أي مكان.
@@ -66,10 +69,13 @@ friends' "help".
 | الملف | المحتوى |
 |---|---|
 | [`docs/GDD.md`](docs/GDD.md) | وثيقة تصميم اللعبة: الحلقة الأساسية، الميكانيكيات، المحتوى، التقدّم |
-| [`docs/ART_DIRECTION.md`](docs/ART_DIRECTION.md) | الستايل البصري، الألوان، المراجع، الأصول، برومبتات Higgsfield |
+| [`docs/ART_DIRECTION.md`](docs/ART_DIRECTION.md) | الستايل البصري للإصدار 0.1 (بينتغير في 0.2.0) |
 | [`docs/TECH_DESIGN.md`](docs/TECH_DESIGN.md) | Technical design: networking, physics sync, grab system, architecture, tests |
 | [`docs/MARKET.md`](docs/MARKET.md) | السوق والمنافسين والتسعير وخطة الـ Wishlists |
-| [`docs/ROADMAP.md`](docs/ROADMAP.md) | المراحل من النموذج الأولي إلى الإطلاق |
+| [`docs/ROADMAP.md`](docs/ROADMAP.md) | المراحل من النموذج الأولي إلى الإطلاق، والإصدارات |
+| [`docs/RELEASE_0.2.0.md`](docs/RELEASE_0.2.0.md) | خطة الإصدار 0.2.0: إعادة تصميم البيئة والعفش والشخصيات والحركة |
+| [`marketing/story/`](marketing/story) | قصة المقدمة (6 لوحات + فيديو) |
+| [`marketing/store/`](marketing/store) | صور ونصوص صفحات Steam و itch.io |
 | [`concept/`](concept) | الصور المبدئية (Higgsfield) مع وصف كل صورة |
 
 ## الصور المبدئية / Concept art

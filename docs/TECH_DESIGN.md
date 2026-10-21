@@ -1,6 +1,6 @@
 # Technical Design
 
-Pre-production plan for the implementation (no code yet).
+Technical plan, written before the code. "Implementation status" at the end says what v0.1.0 actually has.
 
 ## Stack
 - **Engine:** Godot 4.7 (Forward+ for PC; Compatibility fallback for Steam Deck low-power mode), GDScript.
@@ -60,7 +60,7 @@ tests/             headless tests
   runtime); data loaded in `_init`; textures used in `_draw` cached.
 
 
-## Implementation status (Phase 2 start)
+## Implementation status (v0.1.0)
 
 - `scripts/autoload/net.gd` (`Net`): ENet host/join on port 7777, LAN discovery by UDP broadcast on
   7778, player list `{peer_id: {name, character}}` with unique characters enforced by the host.
@@ -69,6 +69,11 @@ tests/             headless tests
   (`_send_input`, unreliable ordered) and smooth towards 30 Hz `PackedFloat32Array` snapshots
   (`_snapshot`: per mover 18 floats, per item 10). Breakage and deliveries ride in the snapshot;
   the result comes as a reliable `_net_finished`.
+- Internet play: room codes through a [noray](https://github.com/foxssake/noray) server on the VPS (`scripts/net/noray_client.gd`,
+  address in `data/online.json`): direct NAT punch first, relay as fallback.
+- Progress (`scripts/autoload/progress.gd`): stars per job, star-gated unlocks, company bank, upgrade levels
+  (`data/upgrades.json`: gloves, boots, clock, bubble_wrap). In online jobs boots/gloves are per player, clock and
+  bubble wrap follow the host.
 - Not yet: Steam transport (SteamMultiplayerPeer), joining mid-job, client-side prediction for the
   local mover (input delay = round trip; fine on LAN), host migration.
 - Test: `tools/net_test.sh` runs a host and a client process over localhost (also in CI).
