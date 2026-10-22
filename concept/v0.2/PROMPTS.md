@@ -70,14 +70,14 @@
 | 10 | bookshelf | a tall wooden bookshelf filled with colorful books | | ✓ |
 | 11 | bed | a double bed with a blue duvet and two white pillows | | ✓ |
 | 12 | desk | a wooden office desk with a drawer unit | | ✓ |
-| 13 | monitor | a computer monitor on a stand | ✔ | باقي |
+| 13 | monitor | a computer monitor on a stand | ✔ | ✅ |
 | 14 | vase | a tall ceramic vase with a few flowers | ✔ | ✓ |
 | 15 | fishbowl | a round glass fishbowl with water and an orange goldfish | ✔ | ✓ |
-| 16 | aquarium | a large rectangular glass aquarium on a wooden stand with fish and water plants | ✔ | باقي |
+| 16 | aquarium | a large rectangular glass aquarium on a wooden stand with fish and water plants | ✔ | ✅ |
 | 17 | piano | a glossy black upright piano | | ✓ |
-| 18 | guitar | an acoustic guitar | ✔ | باقي |
-| 19 | washer | a white front-loading washing machine | | باقي |
-| 20 | wardrobe | a tall two-door wooden wardrobe | | باقي |
+| 18 | guitar | an acoustic guitar | ✔ | ✅ |
+| 19 | washer | a white front-loading washing machine | | ✅ |
+| 20 | wardrobe | a tall two-door wooden wardrobe | | ✅ |
 | 21 | water_cooler | an office water cooler with a big blue water bottle | | ✓ |
 | 22 | armchair | a cozy mustard-yellow armchair | | ✓ |
 
@@ -90,23 +90,23 @@
 | # | id | القطعة | الحالة |
 |---|---|---|---|
 | 24 | wall | a modular house wall segment, cream plaster with a light wood baseboard, straight piece about 2 m wide and 2.6 m tall | ✓ |
-| 25 | wall_door | a modular house wall segment with an open interior doorway, cream plaster | باقي |
-| 26 | wall_window | a modular house wall segment with a white-framed window, cream plaster | باقي |
-| 27 | front_door | a house front door module: white wall piece with a red wooden front door, a small porch step and a doormat | باقي |
-| 28 | floor_tiles | a set of three square floor tiles side by side: warm wood planks, white kitchen tiles, soft blue carpet | باقي |
-| 29 | stairs | a straight wooden indoor staircase with a simple railing | باقي |
-| 30 | roof | a pitched house roof piece with chunky terracotta tiles and a small chimney | باقي |
+| 25 | wall_door | a modular house wall segment with an open interior doorway, cream plaster | ✅ |
+| 26 | wall_window | a modular house wall segment with a white-framed window, cream plaster | ✅ |
+| 27 | front_door | a house front door module: white wall piece with a red wooden front door, a small porch step and a doormat | ✅ |
+| 28 | floor_tiles | a set of three square floor tiles side by side: warm wood planks, white kitchen tiles, soft blue carpet | ✅ |
+| 29 | stairs | a straight wooden indoor staircase with a simple railing | ✅ |
+| 30 | roof | a pitched house roof piece with chunky terracotta tiles and a small chimney | ✅ |
 
 ### الشارع والحديقة
 | # | id | القطعة | الحالة |
 |---|---|---|---|
-| 31 | tree | a round leafy cartoon tree | باقي |
-| 32 | pine_snow | a pine tree covered with snow | باقي |
-| 33 | bush_fence | a short white picket fence segment with a round green bush in front of it | باقي |
-| 34 | mailbox | a blue mailbox on a wooden post | باقي |
-| 35 | street_lamp | a street lamp | باقي |
-| 36 | road | a square road tile with a sidewalk and curb on one side and a dashed lane marking | باقي |
-| 37 | lawn | a square lawn tile with grass, a few flowers and a stone garden path | باقي |
+| 31 | tree | a round leafy cartoon tree | ✅ |
+| 32 | pine_snow | a pine tree covered with snow | ✅ |
+| 33 | bush_fence | a short white picket fence segment with a round green bush in front of it | ✅ |
+| 34 | mailbox | a blue mailbox on a wooden post | ✅ |
+| 35 | street_lamp | a street lamp | ✅ |
+| 36 | road | a square road tile with a sidewalk and curb on one side and a dashed lane marking | ✅ |
+| 37 | lawn | a square lawn tile with grass, a few flowers and a stone garden path | ✅ |
 
 > لو تبي كل شي من ChatGPT بنفس الإحساس، اعمل كل القائمة هناك حتى اللي عليها ✓.
 
