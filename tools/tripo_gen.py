@@ -4,6 +4,8 @@
 Reads concept/v0.2/README.md, sends each image URL to Tripo (movers use multiview
 front + side), polls the tasks and saves assets/models/v0.2/<id>.glb.
 Needs TRIPO_API_KEY. Skips models that already exist, so it can be re-run.
+Task ids are kept in assets/models/v0.2/tasks.json, so a re-run resumes them
+instead of paying for a new generation (e.g. after a failed download).
 Usage: python3 tools/tripo_gen.py [name ...]   (no names = everything)
 """
 import json
@@ -58,10 +60,17 @@ def main():
     if sys.argv[1:]:
         todo = {k: v for k, v in todo.items() if k in sys.argv[1:]}
     todo = {k: v for k, v in todo.items() if not os.path.exists(os.path.join(OUT, k + ".glb"))}
+    known_path = os.path.join(OUT, "tasks.json")
+    known = json.load(open(known_path)) if os.path.exists(known_path) else {}
     tasks = {}
     for name, body in todo.items():
+        if name in known:
+            tasks[name] = known[name]
+            print("resuming", name, tasks[name], flush=True)
+            continue
         body = dict(body, texture=True, pbr=True)
-        tasks[name] = call("POST", "/task", body)["task_id"]
+        tasks[name] = known[name] = call("POST", "/task", body)["task_id"]
+        json.dump(known, open(known_path, "w"), indent=1, sort_keys=True)
         print("submitted", name, tasks[name], flush=True)
     failed = []
     while tasks:
