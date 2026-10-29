@@ -1,12 +1,15 @@
 class_name TruckBuilder
-## The moving truck: simple colliders (bed block, three cargo walls, cab, ramp) dressed with a
-## detailed procedural model — cab with hood, sloped windshield, grille, headlights and roof
-## beacons, ribbed cargo box with the company name, open rear doors, dual wheels with hubcaps,
-## chassis, bumpers, tail lights and a treaded ramp. The truck faces +Z (cab at the front).
+## The moving truck: simple colliders (bed block, three cargo walls, cab, ramp) dressed as a
+## chunky vinyl-toy truck after the v0.2 concept — white cargo box with a teal skirt, an orange
+## stripe and the company name, rounded white top rails, a teal cab with a white roof, round
+## headlights, a capsule bumper, an orange roof beacon, big single wheels and an exhaust stack
+## that puffs while the truck idles. The truck faces +Z (cab at the front). Cargo walls and the
+## cab fade when they hide a mover (PlayerRig), so the cargo stays visible.
 
 const WALL_HEIGHT := 2.0
 const BODY := Color("f7f3ea")
-const CAB := Color("2a8c99")
+const TEAL := Color("2a9aa6")
+const ORANGE := Color("f28c3a")
 const TRIM := Color("4a4f5a")
 const DARK := Color("2b2d38")
 const CHROME := Color("d9dde3")
@@ -30,76 +33,100 @@ static func build(root: Node3D, truck: Dictionary) -> TruckZone:
 	var right := LevelBuilder.static_box(root, Vector3(cx + width * 0.5 - wt * 0.5, bed + WALL_HEIGHT * 0.5, zc), Vector3(wt, WALL_HEIGHT, length), BODY, true)
 	var front_wall := LevelBuilder.static_box(root, Vector3(cx, bed + WALL_HEIGHT * 0.5, front - wt * 0.5), Vector3(width, WALL_HEIGHT, wt), BODY, true)
 
-	# --- Cargo floor, chassis and skirts.
+	# --- Cargo floor, chassis and teal skirts.
 	_box(root, Vector3(cx, bed - 0.08, zc), Vector3(width - 0.02, 0.16, length), Color("b98450"))
 	for i in int(width / 0.3):
 		_box(root, Vector3(cx - width * 0.5 + 0.15 + i * 0.3, bed + 0.003, zc), Vector3(0.015, 0.006, length - 0.05), Color("8a5a36"))
-	_box(root, Vector3(cx, bed - 0.3, zc + 0.6), Vector3(width - 0.5, 0.3, length + 1.6), DARK)  # frame rails
+	_box(root, Vector3(cx, bed - 0.32, zc + 0.6), Vector3(width - 0.5, 0.3, length + 1.6), DARK)  # frame rails
 	for s: float in [-1.0, 1.0]:
-		_box(root, Vector3(cx + s * (width * 0.5 - 0.06), bed - 0.28, zc), Vector3(0.1, 0.32, length - 0.4), BODY.darkened(0.08))  # skirts
+		_box(root, Vector3(cx + s * (width * 0.5 - 0.06), bed - 0.25, zc), Vector3(0.12, 0.34, length - 0.2), TEAL)  # skirts
 
-	# --- Cargo walls: ribs, rails, corner posts, company livery (all fade with the walls).
+	# --- Cargo walls: teal lower band, orange stripe, rounded top rail, livery (all fade).
 	for wall: StaticBody3D in [left, right]:
 		var s := -1.0 if wall == left else 1.0
-		var ribs := int(length / 0.6)
-		for i in ribs + 1:
-			var z := -length * 0.5 + i * (length / ribs)
-			LevelBuilder.add_detail(wall, Vector3(s * 0.075, 0, z), Vector3(0.03, WALL_HEIGHT - 0.05, 0.07), BODY.darkened(0.06))
-		LevelBuilder.add_detail(wall, Vector3(s * 0.07, WALL_HEIGHT * 0.5 - 0.06, 0), Vector3(0.05, 0.1, length + 0.02), TRIM)  # top rail
-		LevelBuilder.add_detail(wall, Vector3(s * 0.07, -WALL_HEIGHT * 0.5 + 0.06, 0), Vector3(0.05, 0.1, length + 0.02), TRIM)  # bottom rail
-		LevelBuilder.add_detail(wall, Vector3(s * 0.1, -0.1, 0), Vector3(0.02, 0.32, length - 0.5), Palette.PLAYER_COLORS[0])  # stripe
+		LevelBuilder.add_detail(wall, Vector3(s * 0.065, -WALL_HEIGHT * 0.5 + 0.3, 0), Vector3(0.03, 0.6, length + 0.02), TEAL)
+		LevelBuilder.add_detail(wall, Vector3(s * 0.07, -WALL_HEIGHT * 0.5 + 0.68, 0), Vector3(0.03, 0.14, length + 0.02), ORANGE)
+		_rail(wall, Vector3(0, WALL_HEIGHT * 0.5, 0), length + 0.1, 0.1, BODY, true)
 		_livery(wall, s, length)
-	for z: float in [rear + 0.05, front - 0.05]:
+	LevelBuilder.add_detail(front_wall, Vector3(0, -WALL_HEIGHT * 0.5 + 0.3, 0), Vector3(width + 0.02, 0.6, wt + 0.03), TEAL)
+	_rail(front_wall, Vector3(0, WALL_HEIGHT * 0.5, 0), width + 0.1, 0.1, BODY, false)
+	# Rounded corner posts.
+	for z: float in [rear + 0.06, front - 0.06]:
 		for s: float in [-1.0, 1.0]:
-			_box(root, Vector3(cx + s * (width * 0.5 - 0.02), bed + WALL_HEIGHT * 0.5, z), Vector3(0.14, WALL_HEIGHT + 0.04, 0.14), TRIM)
-	LevelBuilder.add_detail(front_wall, Vector3(0, WALL_HEIGHT * 0.5 - 0.06, 0), Vector3(width + 0.02, 0.1, 0.16), TRIM)
+			_cylinder(root, Vector3(cx + s * (width * 0.5 - 0.02), bed + WALL_HEIGHT * 0.5, z), 0.09, WALL_HEIGHT + 0.1, TEAL)
 
-	# --- Rear: open doors folded flat against the sides, bumper, tail lights, plate.
+	# --- Rear: open teal-framed doors folded flat against the sides, bumper, tail lights, plate.
 	for s: float in [-1.0, 1.0]:
-		var door := _box(root, Vector3(cx + s * (width * 0.5 + 0.06), bed + WALL_HEIGHT * 0.5, rear + width * 0.25 + 0.05), Vector3(0.05, WALL_HEIGHT - 0.1, width * 0.5 - 0.05), BODY)
-		_box(root, door.position + Vector3(s * 0.03, 0, 0), Vector3(0.01, WALL_HEIGHT * 0.7, 0.04), TRIM)  # handle bar
-		_glow(root, Vector3(cx + s * (width * 0.5 - 0.18), bed - 0.25, rear - 0.03), Vector3(0.22, 0.14, 0.04), Color("ff3b3b"))
-	_box(root, Vector3(cx, bed - 0.42, rear - 0.12), Vector3(width - 0.2, 0.14, 0.2), DARK)  # bumper / step
-	_box(root, Vector3(cx, bed - 0.25, rear - 0.03), Vector3(0.5, 0.14, 0.02), Color("f2e6a0"))  # plate
+		var dz := rear + width * 0.25 + 0.05
+		var door := _box(root, Vector3(cx + s * (width * 0.5 + 0.07), bed + WALL_HEIGHT * 0.5, dz), Vector3(0.05, WALL_HEIGHT - 0.1, width * 0.5 - 0.05), BODY)
+		for fz: float in [-1.0, 1.0]:
+			_box(root, door.position + Vector3(s * 0.01, 0, fz * (width * 0.25 - 0.06)), Vector3(0.06, WALL_HEIGHT - 0.1, 0.1), TEAL)
+		_box(root, door.position + Vector3(s * 0.04, 0, 0), Vector3(0.02, WALL_HEIGHT * 0.6, 0.05), CHROME)  # handle bar
+		_glow(root, Vector3(cx + s * (width * 0.5 - 0.2), bed - 0.2, rear - 0.04), Vector3(0.24, 0.16, 0.05), Color("ff3b3b"))
+	_capsule_x(root, Vector3(cx, bed - 0.45, rear - 0.12), width - 0.1, 0.13, DARK)  # bumper / step
+	_box(root, Vector3(cx, bed - 0.2, rear - 0.03), Vector3(0.5, 0.14, 0.02), Color("f2e6a0"))  # plate
 
-	# --- Cab (collider + model).
+	# --- Cab (collider + model): teal body, white rounded roof with big windows, orange stripe.
 	var cab_len := 2.2
 	var cab_z := front + cab_len * 0.5
-	var cab := LevelBuilder.static_box(root, Vector3(cx, 1.3, cab_z - 0.2), Vector3(width, 1.7, cab_len - 0.4), CAB, true)
-	LevelBuilder.add_detail(cab, Vector3(0, 0.86, 0), Vector3(width - 0.1, 0.06, cab_len - 0.5), CAB.darkened(0.15))  # roof edge
+	var cab := LevelBuilder.static_box(root, Vector3(cx, 1.3, cab_z - 0.2), Vector3(width, 1.7, cab_len - 0.4), TEAL, true)
+	# Cab collider spans y 0.45..2.15: lower 0.45..1.35 teal, upper 1.35..2.15 white.
+	LevelBuilder.add_detail(cab, Vector3(0, 0.45, 0), Vector3(width + 0.02, 0.8, cab_len - 0.38), BODY)
+	LevelBuilder.add_detail(cab, Vector3(0, 0.06, 0), Vector3(width + 0.04, 0.1, cab_len - 0.36), ORANGE)
+	_rail(cab, Vector3(0, 0.85, 0), width + 0.02, 0.16, BODY, false, Vector3(0, 0, cab_len * 0.5 - 0.2))
 	for s: float in [-1.0, 1.0]:
-		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.005), 0.35, -0.05), Vector3(0.01, 0.55, 0.9), GLASS)  # side window
-		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.006), -0.15, 0.35), Vector3(0.01, 1.0, 0.02), CAB.darkened(0.3))  # door seam
-		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.02), -0.05, 0.1), Vector3(0.03, 0.04, 0.18), CHROME)  # handle
-		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.22), 0.35, 0.55), Vector3(0.06, 0.32, 0.18), DARK)  # mirror
-		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.11), 0.35, 0.55), Vector3(0.2, 0.03, 0.03), DARK)  # mirror arm
-	# Hood, sloped windshield, grille, lights, bumper.
-	var hood_z := front + cab_len + 0.25
-	_box(root, Vector3(cx, 0.95, hood_z - 0.05), Vector3(width - 0.1, 0.75, 0.9), CAB)
-	var shield := _box(root, Vector3(cx, 1.75, front + cab_len - 0.32), Vector3(width - 0.3, 0.75, 0.05), GLASS)
-	shield.rotation.x = -0.35
-	_box(root, Vector3(cx, 0.85, hood_z + 0.42), Vector3(width * 0.55, 0.45, 0.04), DARK)  # grille
-	for i in 4:
-		_box(root, Vector3(cx, 0.68 + i * 0.11, hood_z + 0.445), Vector3(width * 0.55, 0.03, 0.02), CHROME)
+		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.015), 0.45, 0.05), Vector3(0.01, 0.55, cab_len - 0.8), GLASS)  # side window
+		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.02), -0.25, 0.3), Vector3(0.01, 0.6, 0.02), TEAL.darkened(0.3))  # door seam
+		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.03), -0.1, 0.05), Vector3(0.03, 0.05, 0.2), CHROME)  # handle
+		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.25), 0.4, 0.55), Vector3(0.08, 0.36, 0.2), DARK)  # mirror
+		LevelBuilder.add_detail(cab, Vector3(s * (width * 0.5 + 0.12), 0.4, 0.55), Vector3(0.22, 0.04, 0.04), DARK)  # mirror arm
+	# Short rounded nose, big windscreen, grille, round headlights, capsule bumper.
+	var nose_z := front + cab_len + 0.2
+	_box(root, Vector3(cx, 0.92, nose_z - 0.05), Vector3(width - 0.06, 0.85, 0.8), TEAL)
+	_capsule_x(root, Vector3(cx, 1.3, nose_z - 0.05), width - 0.1, 0.38, TEAL, 0.5)   # rounded top of the nose
+	var shield := _box(root, Vector3(cx, 1.78, front + cab_len - 0.3), Vector3(width - 0.3, 0.65, 0.05), GLASS)
+	shield.rotation.x = -0.3
+	_box(root, Vector3(cx, 0.9, nose_z + 0.36), Vector3(width * 0.42, 0.42, 0.05), TEAL.darkened(0.35))  # grille
+	for i in 3:
+		_box(root, Vector3(cx, 0.78 + i * 0.12, nose_z + 0.39), Vector3(width * 0.42, 0.04, 0.03), TEAL.lightened(0.2))
 	for s: float in [-1.0, 1.0]:
-		_glow(root, Vector3(cx + s * (width * 0.5 - 0.3), 0.92, hood_z + 0.43), Vector3(0.28, 0.2, 0.04), Color("fff6c8"))
-		_glow(root, Vector3(cx + s * (width * 0.5 - 0.12), 0.92, hood_z + 0.43), Vector3(0.1, 0.12, 0.04), Color("ffb347"))
-	_box(root, Vector3(cx, 0.5, hood_z + 0.5), Vector3(width + 0.1, 0.2, 0.22), TRIM)
-	# Roof beacons (orange, like the intro story).
-	for s: float in [-1.0, 1.0]:
-		_glow(root, Vector3(cx + s * 0.45, 2.24, front + cab_len * 0.45), Vector3(0.28, 0.14, 0.2), Color("ff9a2e"))
-	_box(root, Vector3(cx, 2.18, front + cab_len * 0.45), Vector3(1.3, 0.05, 0.25), DARK)
+		var lamp := _cylinder(root, Vector3(cx + s * (width * 0.5 - 0.38), 0.95, nose_z + 0.36), 0.2, 0.08, Color("fff6c8"))
+		lamp.rotation_degrees = Vector3(90, 0, 0)
+		var mat := (lamp.mesh as CylinderMesh).material as StandardMaterial3D
+		mat.emission_enabled = true
+		mat.emission = Color("fff6c8")
+		mat.emission_energy_multiplier = 0.8
+		_glow(root, Vector3(cx + s * (width * 0.5 - 0.1), 0.95, nose_z + 0.37), Vector3(0.08, 0.14, 0.04), Color("ffb347"))
+	_capsule_x(root, Vector3(cx, 0.52, nose_z + 0.42), width + 0.12, 0.17, DARK)
+	# Orange roof beacon.
+	var beacon := MeshInstance3D.new()
+	var bm := SphereMesh.new()
+	bm.radius = 0.2
+	bm.height = 0.3
+	bm.is_hemisphere = true
+	bm.material = _mat(Color("ff9a2e"))
+	(bm.material as StandardMaterial3D).emission_enabled = true
+	(bm.material as StandardMaterial3D).emission = Color("ff9a2e")
+	(bm.material as StandardMaterial3D).emission_energy_multiplier = 0.9
+	beacon.mesh = bm
+	beacon.position = Vector3(cx, 2.31, front + cab_len * 0.45)
+	root.add_child(beacon)
+	_cylinder(root, Vector3(cx, 2.3, front + cab_len * 0.45), 0.24, 0.06, DARK)
 
-	# --- Wheels: dual at the back, single at the front, arches and mud flaps.
-	for wz: float in [rear + 0.8, rear + 1.5, front + cab_len - 0.2]:
-		var dual := wz < front
+	# --- Exhaust stack behind the cab; it puffs slow cartoon clouds while the truck idles.
+	var stack_x := cx + width * 0.5 + 0.12
+	_cylinder(root, Vector3(stack_x, 1.6, front + 0.15), 0.07, 1.9, CHROME)
+	var puff := Exhaust.make(0.45, Color(0.9, 0.9, 0.93))
+	puff.position = Vector3(stack_x, 2.6, front + 0.15)
+	puff.rotation.x = PI * 0.5   # emit upward
+	root.add_child(puff)
+
+	# --- Big single wheels with white hubs (toy style), dark fenders.
+	for wz: float in [rear + 0.85, rear + 2.0, front + cab_len - 0.15]:
 		for s: float in [-1.0, 1.0]:
-			var x := cx + s * (width * 0.5 - 0.1)
-			_wheel(root, Vector3(x, 0.45, wz), s, dual)
-			_box(root, Vector3(x + s * 0.02, 0.98, wz), Vector3(0.36, 0.06, 1.05), DARK)  # arch
-			if not dual:
-				continue
-			_box(root, Vector3(x + s * 0.02, 0.32, wz - 0.62), Vector3(0.34, 0.45, 0.03), DARK)  # mud flap
+			var x := cx + s * (width * 0.5 - 0.05)
+			_wheel(root, Vector3(x, 0.5, wz), s)
+			_box(root, Vector3(x + s * 0.04, 1.06, wz), Vector3(0.36, 0.08, 1.15), DARK)  # fender
 
 	# --- Ramp: aluminium with tread strips and side rails.
 	var ramp_len: float = truck.ramp_length
@@ -141,44 +168,77 @@ static func _livery(wall: StaticBody3D, side: float, length: float) -> void:
 	label.outline_modulate = Color.WHITE
 	label.pixel_size = 0.0042
 	label.line_spacing = -24
-	label.position = Vector3(side * 0.12, 0.42, length * 0.1 + side * length * 0.06)
+	label.position = Vector3(side * 0.12, 0.4, length * 0.1 + side * length * 0.06)
 	label.rotation.y = PI * 0.5 * side
 	label.double_sided = false
 	wall.add_child(label)
 	var icon := Sprite3D.new()
 	icon.texture = load("res://assets/ui/sofa.png")
 	icon.pixel_size = 0.0028
-	icon.position = Vector3(side * 0.12, 0.42, length * 0.1 - side * length * 0.26)
+	icon.position = Vector3(side * 0.12, 0.4, length * 0.1 - side * length * 0.26)
 	icon.rotation.y = PI * 0.5 * side
 	icon.double_sided = false
 	wall.add_child(icon)
 
 
-static func _wheel(root: Node3D, pos: Vector3, side: float, dual: bool) -> void:
-	for k in (2 if dual else 1):
-		var offset := Vector3(-side * 0.3 * k, 0, 0)  # inner twin sits under the body
-		var tire := MeshInstance3D.new()
-		var tm := CylinderMesh.new()
-		tm.top_radius = 0.45
-		tm.bottom_radius = 0.45
-		tm.height = 0.28
-		tm.radial_segments = 20
-		tm.material = _mat(Color("1e1f26"))
-		tire.mesh = tm
-		tire.rotation_degrees = Vector3(0, 0, 90)
-		tire.position = pos + offset
-		root.add_child(tire)
-		var hub := MeshInstance3D.new()
-		var hm := CylinderMesh.new()
-		hm.top_radius = 0.22
-		hm.bottom_radius = 0.22
-		hm.height = 0.3
-		hm.radial_segments = 16
-		hm.material = _mat(CHROME)
-		hub.mesh = hm
-		hub.rotation_degrees = Vector3(0, 0, 90)
-		hub.position = pos + offset
-		root.add_child(hub)
+## Rounded rail (a cylinder) on top of a wall body, running along Z (`along_z`) or X. It fades
+## with the wall, like LevelBuilder.add_detail boxes.
+static func _rail(body: StaticBody3D, pos: Vector3, length: float, radius: float, color: Color, along_z: bool, offset := Vector3.ZERO) -> void:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius
+	cm.bottom_radius = radius
+	cm.height = length
+	cm.radial_segments = 12
+	cm.rings = 1
+	cm.material = _mat(color)
+	mi.mesh = cm
+	mi.position = pos + offset
+	mi.rotation_degrees = Vector3(90, 0, 0) if along_z else Vector3(0, 0, 90)
+	body.add_child(mi)
+	var extra: Array = body.get_meta("extra_materials", [])
+	extra.append(cm.material)
+	body.set_meta("extra_materials", extra)
+
+
+static func _wheel(root: Node3D, pos: Vector3, side: float) -> void:
+	var tire := _cylinder(root, pos, 0.5, 0.34, Color("1e1f26"))
+	tire.rotation_degrees = Vector3(0, 0, 90)
+	var hub := _cylinder(root, pos + Vector3(side * 0.03, 0, 0), 0.27, 0.34, Color("f4f1ea"))
+	hub.rotation_degrees = Vector3(0, 0, 90)
+	var cap := _cylinder(root, pos + Vector3(side * 0.05, 0, 0), 0.09, 0.34, TRIM)
+	cap.rotation_degrees = Vector3(0, 0, 90)
+
+
+static func _capsule_x(root: Node3D, pos: Vector3, length: float, radius: float, color: Color, squash := 1.0) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var cm := CapsuleMesh.new()
+	cm.radius = radius
+	cm.height = length
+	cm.radial_segments = 16
+	cm.rings = 4
+	cm.material = _mat(color)
+	mi.mesh = cm
+	mi.position = pos
+	mi.rotation_degrees = Vector3(0, 0, 90)
+	mi.scale = Vector3(squash, 1, 1)   # local X becomes height after the turn
+	root.add_child(mi)
+	return mi
+
+
+static func _cylinder(parent: Node3D, pos: Vector3, radius: float, height: float, color: Color) -> MeshInstance3D:
+	var mi := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = radius
+	cm.bottom_radius = radius
+	cm.height = height
+	cm.radial_segments = 20
+	cm.rings = 1
+	cm.material = _mat(color)
+	mi.mesh = cm
+	mi.position = pos
+	parent.add_child(mi)
+	return mi
 
 
 static func _box(parent: Node3D, pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
@@ -204,6 +264,6 @@ static func _glow(parent: Node3D, pos: Vector3, size: Vector3, color: Color) -> 
 static func _mat(c: Color) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_color = c
-	m.roughness = 0.6
-	m.metallic_specular = 0.4
+	m.roughness = 0.45
+	m.metallic_specular = 0.45
 	return m

@@ -15,3 +15,6 @@
 - Concept art comes from Higgsfield. For v0.1 art, `concept/01_key_art.png` is the scene/style reference and
   `concept/06_characters_revised.png` the character one. v0.2.0 replaces the style: once the user picks one from
   `concept/v0.2/styles/`, its image becomes the reference. Never use the first lineup (Mario-like) as a character reference.
+- Street layout: the truck parks on a driveway and `Scenery.layout(truck)` puts the street past its nose
+  (traffic never meets the truck; a test checks every mission). Environment textures come from
+  `python3 tools/gen_textures.py` (near-white, tinted by `EnvMaterials`); fading walls need their own material.

@@ -5,6 +5,11 @@ class_name LevelBuilder
 const LAYER_WORLD := 1
 const TRUCK_WALL_HEIGHT := 2.0
 const FADE_GROUP := "fade_when_blocking"
+## Outside of the house: siding or brick, tinted. Picked per job from the house layout.
+const EXTERIORS := [["f6d5bd", "siding"], ["bcd7ef", "siding"], ["e9b38f", "brick"], ["d3e8cf", "siding"], ["f3e1a8", "siding"], ["d98f7a", "brick"]]
+
+static var _exterior: Color
+static var _exterior_tex := "siding"
 
 
 ## Returns the TruckZone; everything is added under `root`.
@@ -22,7 +27,8 @@ static func build(root: Node3D, m: Dictionary) -> TruckZone:
 	var t: float = house.wall_thickness
 	var door_h: float = house.door_height
 
-	var ground := _static_box(root, Vector3(0, -0.5, 8), Vector3(80, 1, 80), Color("eef6fb") if m.get("ice", false) else Palette.GRASS)
+	var street_z: float = Scenery.layout(m.truck).street_z
+	var ground := _static_box(root, Vector3(0, -0.5, street_z - 12.0), Vector3(Scenery.STREET_LENGTH + 40.0, 1, 150), Color("eef6fb") if m.get("ice", false) else Palette.GRASS)
 	Scenery.texture_ground(ground, m.get("ice", false))
 	if m.get("ice", false):
 		var pm := PhysicsMaterial.new()
@@ -40,6 +46,9 @@ static func build(root: Node3D, m: Dictionary) -> TruckZone:
 
 	var wall_a := Palette.WALLS[0]
 	var wall_b := Palette.WALLS[1]
+	var pick: Array = EXTERIORS[absi(hash(str(house.min) + str(house.max))) % EXTERIORS.size()]
+	_exterior = Color(String(pick[0]))
+	_exterior_tex = pick[1]
 	_wall_x(root, mn.y, mn.x, mx.x, h, t, wall_a, NAN, 0.0, 0.0, -1.0)  # back
 	_wall_z(root, mn.x, mn.y, mx.y, h, t, wall_a, NAN, 0.0, 0.0, -1.0)  # left
 	_wall_z(root, mx.x, mn.y, mx.y, h, t, wall_b, NAN, 0.0, 0.0, 1.0)  # right
@@ -69,7 +78,6 @@ static func build(root: Node3D, m: Dictionary) -> TruckZone:
 	var path_len := rear - ramp_len - mx.y
 	var path_x := (door_x + float(truck.center_x)) * 0.5
 	_visual_box(root, Vector3(path_x, 0.012, mx.y + path_len * 0.5), Vector3(absf(door_x - float(truck.center_x)) + 2.0, 0.02, path_len + 0.4), Palette.PAVEMENT)
-	_visual_box(root, Vector3(0, 0.008, rear + 2.0), Vector3(80, 0.02, 9.0), Color("6f6f78"))  # street
 	Scenery.build(root, m, mn, mx, door_x, truck)
 	return TruckBuilder.build(root, truck)
 
@@ -101,18 +109,46 @@ static func _environment(root: Node3D, theme := "day") -> void:
 static func _wall_x(root: Node3D, z: float, x0: float, x1: float, h: float, t: float, color: Color, door_c := NAN, door_w := 0.0, door_h := 0.0, outward := 1.0) -> void:
 	for seg in _segments(x0, x1, door_c, door_w):
 		var body := _static_box(root, Vector3((seg.x + seg.y) * 0.5, h * 0.5, z), Vector3(seg.y - seg.x + t, h, t), color, true)
+		_skin(body, Vector3(seg.y - seg.x + t, h, t), color, Vector3(0, 0, -outward))
 		_add_windows(body, seg.y - seg.x, t, outward, true)
 	if not is_nan(door_c):
-		_static_box(root, Vector3(door_c, (h + door_h) * 0.5, z), Vector3(door_w, h - door_h, t), color, true)
+		var lintel := _static_box(root, Vector3(door_c, (h + door_h) * 0.5, z), Vector3(door_w, h - door_h, t), color, true)
+		_skin(lintel, Vector3(door_w, h - door_h, t), color, Vector3(0, 0, -outward), false)
 
 
 ## Outer wall running along Z at x, from z0 to z1, with an optional door gap.
 static func _wall_z(root: Node3D, x: float, z0: float, z1: float, h: float, t: float, color: Color, door_c := NAN, door_w := 0.0, door_h := 0.0, outward := 1.0) -> void:
 	for seg in _segments(z0, z1, door_c, door_w):
 		var body := _static_box(root, Vector3(x, h * 0.5, (seg.x + seg.y) * 0.5), Vector3(t, h, seg.y - seg.x + t), color, true)
+		_skin(body, Vector3(t, h, seg.y - seg.x + t), color, Vector3(-outward, 0, 0))
 		_add_windows(body, seg.y - seg.x, t, outward, false)
 	if not is_nan(door_c):
-		_static_box(root, Vector3(x, (h + door_h) * 0.5, door_c), Vector3(t, h - door_h, door_w), color, true)
+		var lintel := _static_box(root, Vector3(x, (h + door_h) * 0.5, door_c), Vector3(t, h - door_h, door_w), color, true)
+		_skin(lintel, Vector3(t, h - door_h, door_w), color, Vector3(-outward, 0, 0), false)
+
+
+## Outer wall: siding/brick outside, and a wallpapered panel with a skirting board on the inside
+## face (`inward` points into the house). The panel fades with the wall like the other details.
+static func _skin(body: StaticBody3D, size: Vector3, inner: Color, inward: Vector3, skirting := true) -> void:
+	var mat := EnvMaterials.make(_exterior, _exterior_tex, 1.2 if _exterior_tex == "siding" else 1.6)
+	((body.get_child(1) as MeshInstance3D).mesh as BoxMesh).material = mat
+	body.set_meta("material", mat)
+	var along_x := absf(inward.z) > 0.5
+	var t := size.z if along_x else size.x
+	var length := size.x if along_x else size.z
+	var face := inward * (t * 0.5 + 0.006)
+	var panel_size := Vector3(length, size.y - 0.01, 0.012) if along_x else Vector3(0.012, size.y - 0.01, length)
+	add_detail(body, face, panel_size, inner, "wallpaper_stripes", 1.0)
+	if skirting:
+		var skirt_size := Vector3(length, 0.14, 0.04) if along_x else Vector3(0.04, 0.14, length)
+		add_detail(body, inward * (t * 0.5 + 0.02) + Vector3(0, -size.y * 0.5 + 0.07, 0), skirt_size, Color("fff8ee"))
+
+
+## Interior wall: dotted wallpaper on both faces.
+static func _wallpaper(body: StaticBody3D, color: Color) -> void:
+	var mat := EnvMaterials.make(color, "wallpaper_dots", 0.9)
+	((body.get_child(1) as MeshInstance3D).mesh as BoxMesh).material = mat
+	body.set_meta("material", mat)
 
 
 ## Windows (frame + glass + sill) on the outside face of a wall segment, every ~3 m.
@@ -134,11 +170,11 @@ static func _add_windows(body: StaticBody3D, length: float, t: float, outward: f
 
 
 ## Visual-only box attached to a wall body; its material fades with the wall (PlayerRig).
-static func add_detail(body: StaticBody3D, pos: Vector3, size: Vector3, color: Color) -> void:
+static func add_detail(body: StaticBody3D, pos: Vector3, size: Vector3, color: Color, tex := "", tile := 1.0) -> void:
 	var mi := MeshInstance3D.new()
 	var bm := BoxMesh.new()
 	bm.size = size
-	bm.material = _mat(color)
+	bm.material = _mat(color) if tex == "" else EnvMaterials.make(color, tex, tile)
 	mi.mesh = bm
 	mi.position = pos
 	body.add_child(mi)
@@ -149,16 +185,16 @@ static func add_detail(body: StaticBody3D, pos: Vector3, size: Vector3, color: C
 
 static func _wall_x_doors(root: Node3D, z: float, x0: float, x1: float, h: float, t: float, color: Color, doors: Array, door_h: float) -> void:
 	for seg in _segments_multi(x0, x1, doors):
-		_static_box(root, Vector3((seg.x + seg.y) * 0.5, h * 0.5, z), Vector3(seg.y - seg.x + t, h, t), color, true)
+		_wallpaper(_static_box(root, Vector3((seg.x + seg.y) * 0.5, h * 0.5, z), Vector3(seg.y - seg.x + t, h, t), color, true), color)
 	for d: Array in doors:
-		_static_box(root, Vector3(d[0], (h + door_h) * 0.5, z), Vector3(d[1], h - door_h, t), color, true)
+		_wallpaper(_static_box(root, Vector3(d[0], (h + door_h) * 0.5, z), Vector3(d[1], h - door_h, t), color, true), color)
 
 
 static func _wall_z_doors(root: Node3D, x: float, z0: float, z1: float, h: float, t: float, color: Color, doors: Array, door_h: float) -> void:
 	for seg in _segments_multi(z0, z1, doors):
-		_static_box(root, Vector3(x, h * 0.5, (seg.x + seg.y) * 0.5), Vector3(t, h, seg.y - seg.x + t), color, true)
+		_wallpaper(_static_box(root, Vector3(x, h * 0.5, (seg.x + seg.y) * 0.5), Vector3(t, h, seg.y - seg.x + t), color, true), color)
 	for d: Array in doors:
-		_static_box(root, Vector3(x, (h + door_h) * 0.5, d[0]), Vector3(t, h - door_h, d[1]), color, true)
+		_wallpaper(_static_box(root, Vector3(x, (h + door_h) * 0.5, d[0]), Vector3(t, h - door_h, d[1]), color, true), color)
 
 
 static func _segments_multi(a: float, b: float, doors: Array) -> Array[Vector2]:

@@ -67,6 +67,17 @@ func _test_data() -> void:
 		check(trans[key].has("ar"), "Arabic translation for " + key)
 	for ch in ["•", "$", "−"]:
 		check(UITheme.FONT.has_char(ch.unicode_at(0)), "font has glyph " + ch)
+	# The truck parks on a driveway: its nose stops short of the sidewalk, so traffic never meets it.
+	for id: String in Data.missions:
+		var truck: Dictionary = Data.mission(id).truck
+		var lay := Scenery.layout(truck)
+		var nearest_lane := float(lay.street_z) - float(lay.lane) * 0.5 - 1.0   # a car's half width
+		check(float(lay.truck_end) < float(lay.walk_z) - 1.2 and float(lay.curb_z) < nearest_lane,
+			"%s: truck stays off the street (truck end %.1f, curb %.1f)" % [id, lay.truck_end, lay.curb_z])
+	for k: Dictionary in Data.game.traffic.kinds:
+		check(Data.vec3(k.size).z > 2.0, "car kind %s has a size" % k.id)
+	for t in ["siding", "brick", "shingles", "wallpaper_stripes", "wallpaper_dots", "asphalt", "pavers"]:
+		check(ResourceLoader.exists(EnvMaterials.DIR + t + ".png"), "texture " + t)
 
 
 func _test_touch_controls() -> void:
@@ -404,7 +415,20 @@ func _test_mission_delivery() -> void:
 	var high := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(rx, 3, rear - 0.15), Vector3(rx, -1, rear - 0.15), 1))
 	var low := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(rx, 3, rear - float(tr_data.ramp_length) + 0.15), Vector3(rx, -1, rear - float(tr_data.ramp_length) + 0.15), 1))
 	check(not high.is_empty() and absf(high.position.y - float(tr_data.bed_height)) < 0.15, "ramp top meets the truck bed (y=%s)" % (high.get("position", Vector3.ZERO).y))
-	check(not low.is_empty() and low.position.y < 0.15, "ramp foot rests on the street (y=%s)" % (low.get("position", Vector3.ZERO).y))
+	check(not low.is_empty() and low.position.y < 0.15, "ramp foot rests on the driveway (y=%s)" % (low.get("position", Vector3.ZERO).y))
+	# Street traffic flows past the parked truck instead of queueing behind it.
+	var traffic: StreetTraffic = mission.find_child("Traffic", true, false)
+	check(traffic != null and traffic.get_child_count() > 0, "street has moving cars")
+	if traffic:
+		var start := {}
+		for car in traffic.get_children():
+			start[car] = (car as Node3D).position.x
+		await _wait(1.0)
+		var moved := 0
+		for car: Node3D in start:
+			if is_instance_valid(car) and absf(car.position.x - float(start[car])) > 2.0:
+				moved += 1
+		check(moved > 0, "cars keep driving (%d of %d moved)" % [moved, start.size()])
 	var box: Grabbable = mission.items.filter(func(g: Grabbable) -> bool: return g.item_id == "box_small")[0]
 	var zone := mission.zone
 	box.global_position = zone.global_position + Vector3(0, -zone.size.y * 0.5 + 0.5, 0)

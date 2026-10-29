@@ -4,37 +4,57 @@ class_name Scenery
 ## neighbouring houses and a few clouds. Uses a seed from the house layout, so every player
 ## online sees the same street. Solid pieces sit on the world layer; small ones are visual only.
 
-const WOOD := Color("c48a5a")
 const WHITE := Color("fff8ee")
 const LEAF := [Color("5fb85a"), Color("4caf6a"), Color("74c45c"), Color("3f9e5a")]
 const FLOWERS := [Color("ff6f91"), Color("ffd23f"), Color("ffffff"), Color("a98bdb"), Color("ff8c42")]
-const HOUSE_COLORS := [Color("f6d5bd"), Color("cfe3c2"), Color("bcd7ef"), Color("f3e1a8"), Color("e6cdee")]
-const CAR_COLORS := [Color("e85d5d"), Color("4f8fd9"), Color("f2c14e"), Color("7fc8a9")]
 
 static var _grass_tex: Texture2D = null
 static var _floor_tex: Texture2D = null
+
+
+const STREET_LENGTH := 140.0
+const LANE := 3.2          # one traffic lane
+const PARKING := 2.3       # parking strip along each curb
+const WALK := 2.4          # sidewalk width
+const ROOF_COLORS := [Color("c8553d"), Color("5b6b8c"), Color("8a5a44"), Color("4f8a6b"), Color("d9774a")]
+const DOOR_COLORS := [Color("2a8c99"), Color("c8553d"), Color("f2c14e"), Color("4f6fb0"), Color("6b4a32")]
+const NEIGHBOUR_WALLS := [["f6d5bd", "siding"], ["bcd7ef", "siding"], ["e9b38f", "brick"], ["d3e8cf", "siding"],
+	["f3e1a8", "siding"], ["d98f7a", "brick"], ["e6cdee", "siding"], ["fff3e0", "brick"]]
+
+
+## Where the street goes for this job: the truck parks on the house's driveway and the street
+## runs past its nose. All values are Z positions (the street runs along X) except widths.
+static func layout(truck: Dictionary) -> Dictionary:
+	var truck_end := float(truck.rear_z) + float(truck.length) + 3.2   # cab, hood and bumper
+	var walk_z := truck_end + 0.8 + WALK * 0.5
+	var curb := walk_z + WALK * 0.5
+	var road := PARKING * 2.0 + LANE * 2.0
+	return {"truck_end": truck_end, "walk_z": walk_z, "curb_z": curb, "street_z": curb + road * 0.5,
+		"far_curb_z": curb + road, "far_walk_z": curb + road + WALK * 0.5, "road": road, "lane": LANE}
 
 
 static func build(root: Node3D, m: Dictionary, mn: Vector2, mx: Vector2, door_x: float, truck: Dictionary) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash(str(m.house.min) + str(m.house.max))
 	var winter: bool = m.get("ice", false)
-	var rear: float = truck.rear_z
-	var street_z := rear + 2.0  # centre line of the street
+	var lay := layout(truck)
+	var truck_x: float = truck.center_x
 	var yard_min := mn - Vector2(3.0, 3.0)
-	var yard_max := Vector2(mx.x + 3.0, rear - float(truck.ramp_length) - 0.6)
+	var yard_max := Vector2(mx.x + 3.0, float(lay.walk_z) - WALK * 0.5 - 0.3)
+	var cross_x := roundf(yard_max.x + 30.0)
 
 	_porch(root, mx, door_x)
-	_fence(root, yard_min, yard_max, door_x, float(truck.center_x), winter)
+	_driveway(root, truck, lay)
+	_fence(root, yard_min, yard_max, truck_x, float(truck.width) + 2.2, winter)
 	_garden(root, rng, mn, mx, yard_min, yard_max, door_x, winter)
-	_street(root, rng, street_z, float(truck.center_x), float(truck.length), rear, winter)
-	_neighbours(root, rng, yard_min, yard_max, street_z, winter)
+	_street(root, rng, lay, truck_x, cross_x, winter)
+	_neighbours(root, rng, yard_min, yard_max, lay, cross_x, winter)
 	_clouds(root, rng, (mn + mx) * 0.5)
-	_mailbox(root, Vector3(door_x + 2.4, 0, rear - 2.2))
+	_mailbox(root, Vector3(truck_x + float(truck.width) * 0.5 + 1.7, 0, yard_max.y - 0.6))
 	var traffic := StreetTraffic.new()
 	traffic.name = "Traffic"
 	root.add_child(traffic)
-	traffic.setup(street_z, truck, rng.randi())
+	traffic.setup(lay, STREET_LENGTH, rng.randi())
 
 
 ## Grass gets soft noise so it does not read as a flat green plane.
@@ -83,27 +103,22 @@ static func texture_floor(mi: MeshInstance3D) -> void:
 static func _porch(root: Node3D, mx: Vector2, door_x: float) -> void:
 	_visual(root, Vector3(door_x, 0.02, mx.y + 0.7), Vector3(2.4, 0.04, 1.2), Color("d8cfc4"))  # porch slab
 	_visual(root, Vector3(door_x, 0.045, mx.y + 0.55), Vector3(1.0, 0.01, 0.6), Color("b04a3a"))  # doormat
-	for s in [-1, 1]:
+	for s: float in [-1, 1]:
 		_visual(root, Vector3(door_x + s * 0.95, 1.075, mx.y + 0.13), Vector3(0.12, 2.15, 0.08), WHITE)  # door frame
 		var pot := _solid(root, Vector3(door_x + s * 1.45, 0.22, mx.y + 0.55), Vector3(0.4, 0.44, 0.4), Color("d9774a"))
 		pot.name = "Pot"
 		_sphere(root, Vector3(door_x + s * 1.45, 0.62, mx.y + 0.55), 0.3, LEAF[1])
 	_visual(root, Vector3(door_x, 2.2, mx.y + 0.13), Vector3(2.02, 0.12, 0.08), WHITE)
-	# Mailbox by the path.
-	_solid(root, Vector3(door_x + 2.2, 0.55, mx.y + 3.0), Vector3(0.08, 1.1, 0.08), WOOD)
-	_visual(root, Vector3(door_x + 2.2, 1.2, mx.y + 3.0), Vector3(0.3, 0.25, 0.45), Color("4f8fd9"))
 
 
-static func _fence(root: Node3D, a: Vector2, b: Vector2, door_x: float, truck_x: float, winter: bool) -> void:
+static func _fence(root: Node3D, a: Vector2, b: Vector2, gap_x: float, gap_w: float, winter: bool) -> void:
 	var color := WHITE if not winter else Color("c9a27a")
-	var gap_center := (door_x + truck_x) * 0.5
-	var gap := absf(door_x - truck_x) + 4.5
-	# Back and sides are closed; the front has a wide gate opening onto the path.
+	# Back and sides are closed; the front opens onto the driveway.
 	_fence_line(root, Vector2(a.x, a.y), Vector2(b.x, a.y), color)
 	_fence_line(root, Vector2(a.x, a.y), Vector2(a.x, b.y), color)
 	_fence_line(root, Vector2(b.x, a.y), Vector2(b.x, b.y), color)
-	_fence_line(root, Vector2(a.x, b.y), Vector2(gap_center - gap * 0.5, b.y), color)
-	_fence_line(root, Vector2(gap_center + gap * 0.5, b.y), Vector2(b.x, b.y), color)
+	_fence_line(root, Vector2(a.x, b.y), Vector2(gap_x - gap_w * 0.5, b.y), color)
+	_fence_line(root, Vector2(gap_x + gap_w * 0.5, b.y), Vector2(b.x, b.y), color)
 
 
 static func _fence_line(root: Node3D, p: Vector2, q: Vector2, color: Color) -> void:
@@ -136,7 +151,7 @@ static func _fence_line(root: Node3D, p: Vector2, q: Vector2, color: Color) -> v
 static func _garden(root: Node3D, rng: RandomNumberGenerator, mn: Vector2, mx: Vector2, ya: Vector2, yb: Vector2, door_x: float, winter: bool) -> void:
 	# Hedges along the back of the house and flower beds along its front.
 	_hedge(root, Vector3((mn.x + mx.x) * 0.5, 0, mn.y - 1.4), Vector3(mx.x - mn.x - 1.0, 0.8, 0.7), winter)
-	for side in [-1, 1]:
+	for side: float in [-1, 1]:
 		var x0 := mn.x + 0.4 if side < 0 else door_x + 1.9
 		var x1 := door_x - 1.9 if side < 0 else mx.x - 0.4
 		if x1 - x0 < 1.0:
@@ -161,52 +176,239 @@ static func _garden(root: Node3D, rng: RandomNumberGenerator, mn: Vector2, mx: V
 		_tree(root, Vector3(x + rng.randf_range(-1, 1), 0, ya.y - 2.5 - rng.randf() * 2.0), rng, winter)
 
 
-static func _street(root: Node3D, rng: RandomNumberGenerator, z: float, truck_x: float, truck_len: float, rear: float, winter: bool) -> void:
-	# Sidewalk with a curb between the yard and the road.
-	var walk_z := rear - 1.3
-	_visual(root, Vector3(0, 0.03, walk_z), Vector3(80, 0.06, 2.2), Color("d8d4cc"))
-	_visual(root, Vector3(0, 0.06, walk_z + 1.15), Vector3(80, 0.12, 0.16), Color("bdb8ae"))
-	# Dashed centre line, keeping clear of the truck.
-	for i in range(-38, 39, 3):
-		_visual(root, Vector3(i, 0.02, z + 2.4), Vector3(1.6, 0.01, 0.14), Color("f2e6a0") if not winter else WHITE)
-	# Street lamps along the sidewalk.
-	for x in [-14.0, 0.0, 14.0]:
-		if absf(x - truck_x) < 3.5:
-			x += 5.0
-		var pole := _solid(root, Vector3(x, 1.6, walk_z - 0.8), Vector3(0.12, 3.2, 0.12), Color("4a4f5a"))
-		var model := PropModels.standing("street_lamp", Vector3(0.9, 3.4, 0.9))
-		if model:
-			pole.get_child(1).visible = false
-			model.position.y -= 1.6
-			pole.add_child(model)
+## Paved driveway from the ramp foot to the sidewalk; the truck stands on it, off the street.
+static func _driveway(root: Node3D, truck: Dictionary, lay: Dictionary) -> void:
+	var z0 := float(truck.rear_z) - float(truck.ramp_length) - 0.4
+	var z1 := float(lay.walk_z) - WALK * 0.5
+	var w := float(truck.width) + 2.0
+	_visual(root, Vector3(float(truck.center_x), 0.014, (z0 + z1) * 0.5), Vector3(w, 0.02, z1 - z0), Color.WHITE,
+		EnvMaterials.shared(Color("efe9df"), "pavers", 2.4))
+	for s: float in [-1.0, 1.0]:
+		_visual(root, Vector3(float(truck.center_x) + s * (w * 0.5 + 0.06), 0.03, (z0 + z1) * 0.5), Vector3(0.12, 0.06, z1 - z0), Color("bdb8ae"))
+
+
+## Two-lane street with parking strips, sidewalks, a cross street, lamps and parked cars.
+static func _street(root: Node3D, rng: RandomNumberGenerator, lay: Dictionary, truck_x: float, cross_x: float, winter: bool) -> void:
+	var half := STREET_LENGTH * 0.5
+	var road: float = lay.road
+	var sz: float = lay.street_z
+	var asphalt := EnvMaterials.shared(Color("eef2f6") if winter else Color.WHITE, "asphalt", 4.0)
+	var pavers := EnvMaterials.shared(Color("fffaf2") if not winter else Color("f4f8fb"), "pavers", 2.4)
+	var line := Color("f2e6a0") if not winter else WHITE
+	_visual(root, Vector3(0, 0.01, sz), Vector3(STREET_LENGTH, 0.02, road), Color.WHITE, asphalt)
+	# The cross street, both sides of the intersection.
+	var cross_len := 60.0
+	_visual(root, Vector3(cross_x, 0.01, float(lay.curb_z) - cross_len * 0.5), Vector3(road, 0.02, cross_len), Color.WHITE, asphalt)
+	_visual(root, Vector3(cross_x, 0.01, float(lay.far_curb_z) + cross_len * 0.5), Vector3(road, 0.02, cross_len), Color.WHITE, asphalt)
+	var gap := Vector2(cross_x - road * 0.5, cross_x + road * 0.5)
+	# Sidewalks with curbs, cut where the cross street meets them.
+	for side: float in [-1.0, 1.0]:
+		var wz: float = lay.walk_z if side < 0 else lay.far_walk_z
+		var curb_z := wz - side * (WALK * 0.5 - 0.08)
+		for seg: Vector2 in [Vector2(-half, gap.x), Vector2(gap.y, half)]:
+			_visual(root, Vector3((seg.x + seg.y) * 0.5, 0.03, wz), Vector3(seg.y - seg.x, 0.06, WALK), Color.WHITE, pavers)
+			_visual(root, Vector3((seg.x + seg.y) * 0.5, 0.06, curb_z), Vector3(seg.y - seg.x, 0.12, 0.16), Color("bdb8ae"))
+		# Sidewalks along the cross street.
+		for sx: float in [-1.0, 1.0]:
+			var z0: float = lay.curb_z - cross_len if side < 0 else lay.far_curb_z
+			var z1: float = lay.curb_z if side < 0 else lay.far_curb_z + cross_len
+			_visual(root, Vector3(cross_x + sx * (road * 0.5 + WALK * 0.5), 0.03, (z0 + z1) * 0.5), Vector3(WALK, 0.06, z1 - z0), Color.WHITE, pavers)
+		# Zebra crossing over the cross street.
+		for i in 7:
+			_visual(root, Vector3(gap.x + 0.7 + i * (road - 1.4) / 6.0, 0.022, wz), Vector3(0.55, 0.01, WALK - 0.2), WHITE)
+	# Markings: dashed centre line and parking edge lines, broken by the intersection.
+	var x := -half + 1.0
+	while x < half:
+		if x < gap.x - 1.0 or x > gap.y + 1.0:
+			_visual(root, Vector3(x, 0.022, sz), Vector3(1.8, 0.01, 0.15), line)
+		x += 3.2
+	for ez: float in [float(lay.curb_z) + PARKING, float(lay.far_curb_z) - PARKING]:
+		for seg: Vector2 in [Vector2(-half, gap.x - 1.0), Vector2(gap.y + 1.0, half)]:
+			_visual(root, Vector3((seg.x + seg.y) * 0.5, 0.022, ez), Vector3(seg.y - seg.x, 0.01, 0.1), WHITE)
+	# Street lamps on both sidewalks (models are heavy, so only near the action).
+	for i in range(-3, 4):
+		for side: float in [-1.0, 1.0]:
+			var lx := truck_x + i * 13.0 + (0.0 if side < 0 else 6.5)
+			if (side < 0 and absf(lx - truck_x) < 3.5) or absf(lx - cross_x) < road * 0.5 + 2.0:
+				continue
+			var wz: float = lay.walk_z if side < 0 else lay.far_walk_z
+			_lamp(root, Vector3(lx, 0, wz - side * 0.75), side)
+	# Parked cars along both curbs, never across the driveway or the intersection.
+	var cfg: Dictionary = Data.game.traffic
+	var taken: Array[Vector2] = []   # (x, side)
+	var tries := 0
+	while taken.size() < int(cfg.parked_cars) and tries < 200:
+		tries += 1
+		var side := -1.0 if rng.randf() < 0.5 else 1.0
+		var px := rng.randf_range(-half + 8.0, half - 8.0)
+		if absf(px - cross_x) < road * 0.5 + 4.0 or (side < 0 and absf(px - truck_x) < 6.0):
 			continue
-		_visual(root, Vector3(x, 3.25, walk_z - 0.55), Vector3(0.12, 0.08, 0.6), Color("4a4f5a"))
-		var lamp := _sphere(root, Vector3(x, 3.15, walk_z - 0.3), 0.16, Color("fff3b0"))
-		(lamp.mesh.material as StandardMaterial3D).emission_enabled = true
-		(lamp.mesh.material as StandardMaterial3D).emission = Color("fff3b0")
-	# Parked cars up and down the street (not where the truck is).
-	for x in [truck_x - 9.0, truck_x + 9.5, truck_x - 17.0]:
-		_car(root, Vector3(x, 0, z - 0.5 + rng.randf_range(-0.2, 0.2)), CAR_COLORS[rng.randi() % CAR_COLORS.size()], rng.randf() < 0.5)
+		if taken.any(func(t: Vector2) -> bool: return t.y == side and absf(t.x - px) < 6.5):
+			continue
+		taken.append(Vector2(px, side))
+		var pz: float = (float(lay.curb_z) + PARKING * 0.5) if side < 0 else (float(lay.far_curb_z) - PARKING * 0.5)
+		_parked_car(root, rng, Vector3(px, 0, pz), side < 0)
 
 
-static func _neighbours(root: Node3D, rng: RandomNumberGenerator, ya: Vector2, yb: Vector2, street_z: float, winter: bool) -> void:
-	# Houses on both sides of our lot and a row across the street.
-	var spots := [Vector3(ya.x - 6.5, 0, (ya.y + yb.y) * 0.5), Vector3(yb.x + 6.5, 0, (ya.y + yb.y) * 0.5)]
-	for x in range(-24, 25, 12):
-		spots.append(Vector3(x + rng.randf_range(-1.5, 1.5), 0, street_z + 9.0))
-	for p: Vector3 in spots:
-		var w := rng.randf_range(6.0, 8.5)
-		var d := rng.randf_range(5.5, 7.0)
-		var h := rng.randf_range(2.8, 3.6)
-		var color: Color = HOUSE_COLORS[rng.randi() % HOUSE_COLORS.size()]
-		_solid(root, p + Vector3(0, h * 0.5, 0), Vector3(w, h, d), color)
-		_roof(root, p + Vector3(0, h, 0), Vector2(w + 0.6, d + 0.6), Color("b04a3a") if not winter else Color("f4f8fb"))
-		var facing := 1.0 if p.z < street_z else -1.0  # front faces the street
-		if absf(p.x) > 0.1 and p.z > ya.y and p.z < yb.y:
-			facing = 1.0
-		for wx in [-w * 0.3, w * 0.3]:
-			_visual(root, p + Vector3(wx, h * 0.55, facing * (d * 0.5 + 0.02)), Vector3(1.1, 0.9, 0.04), Color("9fd3f0"))
-		_visual(root, p + Vector3(0, 1.0, facing * (d * 0.5 + 0.02)), Vector3(0.9, 2.0, 0.05), Color("8a5a36"))
+static func _lamp(root: Node3D, p: Vector3, side: float) -> void:
+	var pole := _solid(root, p + Vector3(0, 1.6, 0), Vector3(0.12, 3.2, 0.12), Color("4a4f5a"))
+	var model := PropModels.standing("street_lamp", Vector3(0.9, 3.4, 0.9))
+	if model:
+		pole.get_child(1).visible = false
+		model.position.y -= 1.6
+		model.rotation.y = 0.0 if side < 0 else PI
+		pole.add_child(model)
+		return
+	var lamp := _sphere(root, p + Vector3(0, 3.15, side * 0.3), 0.16, Color("fff3b0"))
+	(lamp.mesh.material as StandardMaterial3D).emission_enabled = true
+	(lamp.mesh.material as StandardMaterial3D).emission = Color("fff3b0")
+
+
+static func _parked_car(root: Node3D, rng: RandomNumberGenerator, p: Vector3, facing_left: bool) -> void:
+	var cfg: Dictionary = Data.game.traffic
+	var kind := ToyCars.pick_kind(cfg, rng)
+	var size := ToyCars.size_of(cfg, kind)
+	var body := StaticBody3D.new()
+	body.collision_layer = 1
+	body.collision_mask = 0
+	var col := CollisionShape3D.new()
+	var bs := BoxShape3D.new()
+	bs.size = Vector3(size.x * 0.9, size.y * 0.8, size.z * 0.95)
+	col.shape = bs
+	col.position.y = size.y * 0.4
+	body.add_child(col)
+	body.add_child(ToyCars.build(kind, size, ToyCars.pick_color(cfg, rng)))
+	body.position = p
+	body.rotation.y = -PI * 0.5 if facing_left else PI * 0.5
+	root.add_child(body)
+
+
+## Rows of houses along both sides of the street (and past the cross street), each one built
+## from a few shapes with its own walls, roof, door and windows.
+static func _neighbours(root: Node3D, rng: RandomNumberGenerator, ya: Vector2, yb: Vector2, lay: Dictionary, cross_x: float, winter: bool) -> void:
+	var limit := STREET_LENGTH * 0.5 - 6.0
+	var near_front: float = float(lay.walk_z) - WALK * 0.5
+	var far_front: float = float(lay.far_walk_z) + WALK * 0.5
+	var spots: Array = []
+	for k in 5:
+		spots.append([ya.x - 8.0 - k * 13.0, 1.0])
+		spots.append([yb.x + 8.0 + k * 13.0, 1.0])
+	var fx := -limit
+	while fx <= limit:
+		spots.append([fx + rng.randf_range(-1.0, 1.0), -1.0])
+		fx += 13.0
+	for spot: Array in spots:
+		var x: float = spot[0]
+		var facing: float = spot[1]
+		if absf(x) > limit or absf(x - cross_x) < float(lay.road) * 0.5 + 6.5:
+			continue
+		var setback := rng.randf_range(3.5, 5.0)
+		var front := near_front - setback if facing > 0 else far_front + setback
+		_house(root, rng, x, front, facing, setback, winter)
+
+
+## One neighbour house. `front` is the Z of its front wall, `facing` +1 if it looks toward +Z.
+static func _house(root: Node3D, rng: RandomNumberGenerator, x: float, front: float, facing: float, setback: float, winter: bool) -> void:
+	var kind := rng.randi() % 4   # 0 bungalow, 1 two storeys, 2 bungalow + garage, 3 gable-front cottage
+	var w := rng.randf_range(6.5, 8.0)
+	var d := rng.randf_range(5.5, 6.8)
+	var h := 3.1 if kind != 1 else 5.6
+	var pick: Array = NEIGHBOUR_WALLS[rng.randi() % NEIGHBOUR_WALLS.size()]
+	var wall_col := Color(String(pick[0]))
+	var wall_mat := EnvMaterials.shared(wall_col, pick[1], 1.2 if pick[1] == "siding" else 1.6)
+	var roof_col: Color = ROOF_COLORS[rng.randi() % ROOF_COLORS.size()] if not winter else Color("f4f8fb")
+	var accent: Color = DOOR_COLORS[rng.randi() % DOOR_COLORS.size()]
+	var house := Node3D.new()
+	house.position = Vector3(x, 0, front - facing * d * 0.5)
+	house.rotation.y = 0.0 if facing > 0 else PI
+	root.add_child(house)
+	_solid(house, Vector3(0, h * 0.5, 0), Vector3(w, h, d), wall_col, wall_mat)
+	_visual(house, Vector3(0, 0.18, 0), Vector3(w + 0.12, 0.36, d + 0.12), Color("b8b2a8"))   # foundation
+	_visual(house, Vector3(0, h - 0.08, 0), Vector3(w + 0.1, 0.16, d + 0.1), WHITE)            # eave band
+	for sx: float in [-1.0, 1.0]:
+		for sz: float in [-1.0, 1.0]:
+			_visual(house, Vector3(sx * w * 0.5, h * 0.5, sz * d * 0.5), Vector3(0.18, h, 0.18), WHITE)
+	_roof(house, h, w, d, rng.randf_range(1.5, 2.1), roof_col, wall_mat, kind == 3)
+	if rng.randf() < 0.5:
+		_visual(house, Vector3(w * 0.25, h + 1.3, -d * 0.15), Vector3(0.6, 2.0, 0.6), Color.WHITE, EnvMaterials.shared(Color("d98f7a"), "brick", 1.0))
+	var door_x := 0.0 if kind == 3 else (w * 0.22 if rng.randf() < 0.5 else -w * 0.22)
+	_door(house, Vector3(door_x, 0, d * 0.5), accent, roof_col)
+	var storeys := 2 if kind == 1 else 1
+	for st in storeys:
+		for wx: float in [-w * 0.3, 0.0, w * 0.3]:
+			if st == 0 and absf(wx - door_x) < 1.3:
+				continue
+			if st == 0 and wx == 0.0 and kind != 3:
+				continue
+			_window(house, Vector3(wx, 1.55 + st * 2.6, d * 0.5), 0.0, accent)
+		for sx: float in [-1.0, 1.0]:
+			_window(house, Vector3(sx * w * 0.5, 1.55 + st * 2.6, 0), sx * PI * 0.5, accent)
+	if kind == 2:
+		var gx := w * 0.5 + 1.75
+		_solid(house, Vector3(gx, 1.3, 0.3), Vector3(3.4, 2.6, d - 0.6), wall_col, wall_mat)
+		_visual(house, Vector3(gx, 2.67, 0.3), Vector3(3.6, 0.14, d - 0.4), roof_col)
+		_visual(house, Vector3(gx, 1.05, d * 0.5 + 0.02), Vector3(2.7, 2.1, 0.05), Color.WHITE, EnvMaterials.shared(Color("f4f1ea"), "siding", 0.7))
+		_visual(house, Vector3(gx, 0.015, d * 0.5 + setback * 0.5), Vector3(2.9, 0.02, setback), Color.WHITE, EnvMaterials.shared(Color("efe9df"), "pavers", 2.4))
+	# Front walk, a couple of bushes and sometimes a tree.
+	_visual(house, Vector3(door_x, 0.015, d * 0.5 + setback * 0.5 + 0.4), Vector3(1.1, 0.02, setback - 0.8), Color.WHITE, EnvMaterials.shared(Color("fffaf2"), "pavers", 2.4))
+	for sx: float in [-1.0, 1.0]:
+		_bush(house, Vector3(door_x + sx * 1.3, 0, d * 0.5 + 0.7), rng, winter)
+	if rng.randf() < 0.45:
+		var tx := -w * 0.5 + 0.5 if door_x > 0.0 else w * 0.5 - 0.5
+		if kind != 2 or tx < 0.0:
+			_tree(house, Vector3(tx, 0, d * 0.5 + setback * 0.55), rng, winter)
+
+
+## Gable roof with overhanging shingle slabs and wall-coloured gable ends. The ridge runs along X
+## (slopes face front and back) unless `ridge_along_z` (the gable faces the street).
+static func _roof(house: Node3D, base_y: float, w: float, d: float, rise: float, color: Color, gable_mat: Material, ridge_along_z: bool) -> void:
+	var holder := Node3D.new()
+	holder.position.y = base_y
+	var span := w if ridge_along_z else d
+	var length := d if ridge_along_z else w
+	if not ridge_along_z:
+		holder.rotation.y = PI * 0.5
+	house.add_child(holder)
+	var gable := MeshInstance3D.new()
+	var pm := PrismMesh.new()
+	pm.size = Vector3(span, rise, length)
+	pm.material = gable_mat
+	gable.mesh = pm
+	gable.position.y = rise * 0.5
+	holder.add_child(gable)
+	var a := atan2(rise, span * 0.5)
+	var slab_len := span * 0.5 / cos(a) + 0.45
+	var shingles := EnvMaterials.shared(color, "shingles", 1.0)
+	for side: float in [-1.0, 1.0]:
+		var u := Vector3(side * cos(a), -sin(a), 0)
+		var n := Vector3(side * sin(a), cos(a), 0)
+		var slab := _visual(holder, Vector3(0, rise, 0) + u * slab_len * 0.5 + n * 0.07, Vector3(slab_len, 0.14, length + 0.5), color, shingles)
+		slab.rotation.z = -side * a
+	_visual(holder, Vector3(0, rise + 0.06, 0), Vector3(0.24, 0.14, length + 0.55), color.darkened(0.2))
+
+
+## Front door with frame, step and a little awning; `p` is on the wall face.
+static func _door(house: Node3D, p: Vector3, color: Color, roof: Color) -> void:
+	_visual(house, p + Vector3(0, 1.1, 0.03), Vector3(1.2, 2.25, 0.06), WHITE)
+	_visual(house, p + Vector3(0, 1.03, 0.07), Vector3(0.95, 2.05, 0.06), color)
+	_visual(house, p + Vector3(0.3, 1.0, 0.11), Vector3(0.08, 0.08, 0.04), Color("e5b022"))
+	_visual(house, p + Vector3(0, 0.09, 0.4), Vector3(1.7, 0.18, 0.75), Color("c8c4bd"))
+	var awning := _visual(house, p + Vector3(0, 2.5, 0.4), Vector3(1.7, 0.1, 0.85), roof)
+	awning.rotation.x = 0.25
+
+
+## Window with frame, glass, mullion, sill and shutters, on a wall face at `p` turned by `yaw`.
+static func _window(house: Node3D, p: Vector3, yaw: float, shutter: Color) -> void:
+	var win := Node3D.new()
+	win.position = p
+	win.rotation.y = yaw
+	house.add_child(win)
+	_visual(win, Vector3(0, 0, 0.03), Vector3(1.0, 1.15, 0.06), WHITE).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_visual(win, Vector3(0, 0.02, 0.05), Vector3(0.8, 0.95, 0.04), Color("9fd3f0")).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_visual(win, Vector3(0, 0.02, 0.07), Vector3(0.06, 0.95, 0.03), WHITE).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_visual(win, Vector3(0, -0.6, 0.08), Vector3(1.15, 0.08, 0.16), WHITE)
+	for s: float in [-1.0, 1.0]:
+		_visual(win, Vector3(s * 0.68, 0, 0.04), Vector3(0.32, 1.15, 0.05), shutter).cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
 static func _clouds(root: Node3D, rng: RandomNumberGenerator, center: Vector2) -> void:
@@ -266,52 +468,7 @@ static func _hedge(root: Node3D, p: Vector3, size: Vector3, winter: bool) -> voi
 	_solid(root, p + Vector3(0, size.y * 0.5, 0), size, Color("3f9e5a") if not winter else Color("e8f0f4"))
 
 
-static func _car(root: Node3D, p: Vector3, color: Color, facing_left: bool) -> void:
-	var yaw := PI if facing_left else 0.0
-	var body := _solid(root, p + Vector3(0, 0.6, 0), Vector3(3.6, 0.7, 1.7), color)
-	body.rotation.y = yaw
-	var size := Data.vec3(Data.game.traffic.car_size)
-	var model := PropModels.standing("car", Vector3(size.x, size.y, size.z) * 1.1)
-	if model:
-		(body.get_child(0).shape as BoxShape3D).size = Vector3(size.z, size.y * 0.8, size.x) * 1.05
-		body.get_child(1).visible = false
-		model.rotation.y = PI * 0.5   # front along +X like the box car
-		model.position.y -= 0.6
-		body.add_child(model)
-		return
-	var cabin := MeshInstance3D.new()
-	var cbm := BoxMesh.new()
-	cbm.size = Vector3(1.9, 0.6, 1.5)
-	cbm.material = _mat(Color("bfe6ff"))
-	cabin.mesh = cbm
-	cabin.position = Vector3(-0.2, 0.62, 0)
-	body.add_child(cabin)
-	for wx in [-1.15, 1.15]:
-		for wz in [-0.8, 0.8]:
-			var wheel := MeshInstance3D.new()
-			var wm := CylinderMesh.new()
-			wm.top_radius = 0.34
-			wm.bottom_radius = 0.34
-			wm.height = 0.25
-			wm.material = _mat(Color("2b2d38"))
-			wheel.mesh = wm
-			wheel.rotation_degrees = Vector3(90, 0, 0)
-			wheel.position = Vector3(wx, -0.3, wz)
-			body.add_child(wheel)
-
-
-## Gable roof: a three-sided prism.
-static func _roof(root: Node3D, base: Vector3, size: Vector2, color: Color) -> void:
-	var mi := MeshInstance3D.new()
-	var pm := PrismMesh.new()
-	pm.size = Vector3(size.x, 1.4, size.y)
-	pm.material = _mat(color)
-	mi.mesh = pm
-	mi.position = base + Vector3(0, 0.7, 0)
-	root.add_child(mi)
-
-
-static func _solid(root: Node3D, pos: Vector3, size: Vector3, color: Color) -> StaticBody3D:
+static func _solid(root: Node3D, pos: Vector3, size: Vector3, color: Color, mat: Material = null) -> StaticBody3D:
 	var body := StaticBody3D.new()
 	body.collision_layer = 1
 	body.collision_mask = 0
@@ -323,7 +480,7 @@ static func _solid(root: Node3D, pos: Vector3, size: Vector3, color: Color) -> S
 	var mi := MeshInstance3D.new()
 	var bm := BoxMesh.new()
 	bm.size = size
-	bm.material = _mat(color)
+	bm.material = mat if mat else EnvMaterials.shared(color)
 	mi.mesh = bm
 	body.add_child(mi)
 	body.position = pos
@@ -331,11 +488,11 @@ static func _solid(root: Node3D, pos: Vector3, size: Vector3, color: Color) -> S
 	return body
 
 
-static func _visual(root: Node3D, pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
+static func _visual(root: Node3D, pos: Vector3, size: Vector3, color: Color, mat: Material = null) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var bm := BoxMesh.new()
 	bm.size = size
-	bm.material = _mat(color)
+	bm.material = mat if mat else EnvMaterials.shared(color)
 	mi.mesh = bm
 	mi.position = pos
 	root.add_child(mi)

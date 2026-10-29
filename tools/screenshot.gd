@@ -2,7 +2,7 @@ extends Node
 ## Renders a scene and saves a PNG (needs a display or xvfb, not --headless). Example:
 ##   xvfb-run -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 res://tools/screenshot.tscn -- mission out.png [ar] [seconds]
 ## Scenes: menu, select, lobby, mission (a bot carries furniture), overview (wide shot of the level),
-## sofa (two movers carrying the sofa), crew (all four movers), results, settings, touch (phone controls over the carry scene).
+## street / houses (wide and low shots of the street), sofa (two movers carrying the sofa), crew (all four movers), results, settings, touch (phone controls over the carry scene).
 
 var _mission: Mission = null
 
@@ -77,6 +77,16 @@ func _ready() -> void:
 					_mission.rig.global_position = tc
 					_mission.rig.rotation = Vector3(-0.3, -2.3 if which == "truck" else PI - 0.6, 0)
 					_mission.rig.spring.spring_length = 9.0
+					_mission.rig.spring.collision_mask = 0
+				"street", "houses":
+					# Wide shot of the street from above the truck's nose, or a low one along the houses.
+					_mission.rig.controls_mover = false
+					_mission.rig.set_process(false)
+					var lay := Scenery.layout(_mission.data.truck)
+					var sx: float = _mission.data.truck.center_x
+					_mission.rig.global_position = Vector3(sx, 1.2, float(lay.street_z) - 2.0)
+					_mission.rig.rotation = Vector3(-0.6, 0.5, 0) if which == "street" else Vector3(-0.12, -1.2, 0)
+					_mission.rig.spring.spring_length = 26.0 if which == "street" else 9.0
 					_mission.rig.spring.collision_mask = 0
 				"sofa":
 					await _sofa_scene()
