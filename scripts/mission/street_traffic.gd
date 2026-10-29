@@ -29,7 +29,7 @@ class Car extends AnimatableBody3D:
 
 
 ## `lay` is Scenery.layout(): street centre line and lane width; `length` is the street length.
-func setup(lay: Dictionary, length: float, seed_value: int) -> void:
+func setup(lay: Dictionary, length: float, seed_value: int, center_x := 0.0) -> void:
 	_cfg = Data.game.traffic
 	_rng.seed = seed_value
 	var half := length * 0.5 - 2.0
@@ -38,13 +38,13 @@ func setup(lay: Dictionary, length: float, seed_value: int) -> void:
 		var lane := Lane.new()
 		lane.z = spec[0]
 		lane.dir = spec[1]
-		lane.start_x = -lane.dir * half
-		lane.end_x = lane.dir * half
+		lane.start_x = center_x - lane.dir * half
+		lane.end_x = center_x + lane.dir * half
 		lane.timer = _rng.randf_range(0.0, float(_cfg.respawn_min))
 		_lanes.append(lane)
 		# Start with a car or two already on the road so the street is alive at once.
 		for i in _rng.randi_range(1, 2):
-			_spawn(lane, _rng.randf_range(-half * 0.8, half * 0.8))
+			_spawn(lane, center_x + _rng.randf_range(-half * 0.8, half * 0.8))
 
 
 func _physics_process(delta: float) -> void:

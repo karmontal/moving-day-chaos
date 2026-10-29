@@ -28,7 +28,7 @@ static func build(root: Node3D, m: Dictionary) -> TruckZone:
 	var door_h: float = house.door_height
 
 	var street_z: float = Scenery.layout(m.truck).street_z
-	var ground := _static_box(root, Vector3(0, -0.5, street_z - 12.0), Vector3(Scenery.STREET_LENGTH + 40.0, 1, 150), Color("eef6fb") if m.get("ice", false) else Palette.GRASS)
+	var ground := _static_box(root, Vector3(0, -0.5, street_z - 5.0), Vector3(240, 1, 240), Color("eef6fb") if m.get("ice", false) else Palette.GRASS)
 	Scenery.texture_ground(ground, m.get("ice", false))
 	if m.get("ice", false):
 		var pm := PhysicsMaterial.new()

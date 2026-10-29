@@ -41,20 +41,18 @@ static func build(root: Node3D, m: Dictionary, mn: Vector2, mx: Vector2, door_x:
 	var truck_x: float = truck.center_x
 	var yard_min := mn - Vector2(3.0, 3.0)
 	var yard_max := Vector2(mx.x + 3.0, float(lay.walk_z) - WALK * 0.5 - 0.3)
-	var cross_x := roundf(yard_max.x + 30.0)
 
 	_porch(root, mx, door_x)
 	_driveway(root, truck, lay)
 	_fence(root, yard_min, yard_max, truck_x, float(truck.width) + 2.2, winter)
 	_garden(root, rng, mn, mx, yard_min, yard_max, door_x, winter)
-	_street(root, rng, lay, truck_x, cross_x, winter)
-	_neighbours(root, rng, yard_min, yard_max, lay, cross_x, winter)
+	var bounds := Town.build(root, rng, lay, yard_min, yard_max, truck_x, winter)
 	_clouds(root, rng, (mn + mx) * 0.5)
 	_mailbox(root, Vector3(truck_x + float(truck.width) * 0.5 + 1.7, 0, yard_max.y - 0.6))
 	var traffic := StreetTraffic.new()
 	traffic.name = "Traffic"
 	root.add_child(traffic)
-	traffic.setup(lay, STREET_LENGTH, rng.randi())
+	traffic.setup(lay, bounds.size.x, rng.randi(), bounds.get_center().x)
 
 
 ## Grass gets soft noise so it does not read as a flat green plane.
@@ -308,7 +306,8 @@ static func _neighbours(root: Node3D, rng: RandomNumberGenerator, ya: Vector2, y
 
 
 ## One neighbour house. `front` is the Z of its front wall, `facing` +1 if it looks toward +Z.
-static func _house(root: Node3D, rng: RandomNumberGenerator, x: float, front: float, facing: float, setback: float, winter: bool) -> void:
+## `face_yaw` (optional) turns the house to face any way; then (x, front) is the middle of its front wall.
+static func _house(root: Node3D, rng: RandomNumberGenerator, x: float, front: float, facing: float, setback: float, winter: bool, face_yaw := NAN) -> void:
 	var kind := rng.randi() % 4   # 0 bungalow, 1 two storeys, 2 bungalow + garage, 3 gable-front cottage
 	var w := rng.randf_range(6.5, 8.0)
 	var d := rng.randf_range(5.5, 6.8)
@@ -319,8 +318,11 @@ static func _house(root: Node3D, rng: RandomNumberGenerator, x: float, front: fl
 	var roof_col: Color = ROOF_COLORS[rng.randi() % ROOF_COLORS.size()] if not winter else Color("f4f8fb")
 	var accent: Color = DOOR_COLORS[rng.randi() % DOOR_COLORS.size()]
 	var house := Node3D.new()
-	house.position = Vector3(x, 0, front - facing * d * 0.5)
-	house.rotation.y = 0.0 if facing > 0 else PI
+	var yaw := 0.0 if facing > 0 else PI
+	if not is_nan(face_yaw):
+		yaw = face_yaw
+	house.rotation.y = yaw
+	house.position = Vector3(x, 0, front) - Vector3(sin(yaw), 0, cos(yaw)) * d * 0.5
 	root.add_child(house)
 	_solid(house, Vector3(0, h * 0.5, 0), Vector3(w, h, d), wall_col, wall_mat)
 	_visual(house, Vector3(0, 0.18, 0), Vector3(w + 0.12, 0.36, d + 0.12), Color("b8b2a8"))   # foundation
