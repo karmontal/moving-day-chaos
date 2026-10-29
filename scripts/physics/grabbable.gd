@@ -26,6 +26,10 @@ var _prev_velocity := Vector3.ZERO
 var _age := 0.0
 var _materials: Array[StandardMaterial3D] = []
 var _bottom := 0.0
+## Box around all parts, for fitting the sculpted model over the colliders.
+var _parts_box := AABB()
+## The sculpted look (PropModels), when the item has one; the part meshes are hidden then.
+var _model: Node3D = null
 
 
 static func create(id: String) -> Grabbable:
@@ -53,8 +57,15 @@ func setup(id: String) -> void:
 	pm.bounce = 0.05
 	physics_material_override = pm
 	_bottom = 0.0
+	var part_meshes: Array[MeshInstance3D] = []
 	for part: Dictionary in d.parts:
-		_add_part(part)
+		part_meshes.append(_add_part(part))
+	_model = PropModels.fit(id, _parts_box.size)
+	if _model:
+		_model.position = _parts_box.get_center()
+		add_child(_model)
+		for mi in part_meshes:
+			mi.visible = false
 
 
 ## Distance from the origin to the lowest point, so spawners can rest the item on a floor.
@@ -72,7 +83,7 @@ func current_value() -> float:
 	return 0.0 if broken else value * condition
 
 
-func _add_part(part: Dictionary) -> void:
+func _add_part(part: Dictionary) -> MeshInstance3D:
 	var pos := Data.vec3(part.pos)
 	var mesh: PrimitiveMesh
 	var shape: Shape3D
@@ -122,12 +133,15 @@ func _add_part(part: Dictionary) -> void:
 	mi.mesh = mesh
 	mi.position = pos
 	add_child(mi)
+	var part_box := AABB(pos - mesh.get_aabb().size * 0.5, mesh.get_aabb().size)
+	_parts_box = part_box if _parts_box.size == Vector3.ZERO else _parts_box.merge(part_box)
 	if not part.get("visual", false):
 		var col := CollisionShape3D.new()
 		col.shape = shape
 		col.position = pos
 		add_child(col)
 		_bottom = maxf(_bottom, half_h - pos.y)
+	return mi
 
 
 func _ready() -> void:
@@ -169,6 +183,13 @@ func break_apart() -> void:
 		m.albedo_color = m.albedo_color.darkened(BROKEN_DARKEN)
 		m.roughness = 1.0
 		m.metallic_specular = 0.2
+	if _model:
+		var scorch := StandardMaterial3D.new()
+		scorch.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		scorch.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		scorch.albedo_color = Color(0.1, 0.08, 0.08, BROKEN_DARKEN)
+		for mi in PropModels.meshes(_model):
+			mi.material_overlay = scorch
 	_spawn_shards()
 	AudioManager.play("crash", 0.1)
 	PlatformServices.vibrate(60)

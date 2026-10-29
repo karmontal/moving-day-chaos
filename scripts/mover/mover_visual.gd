@@ -9,7 +9,11 @@ const MODEL_PATH := "res://assets/models/mover_%d.glb"
 ## The walk clip covers about this many metres per second at speed 1.
 const WALK_CLIP_SPEED := 1.25
 ## Arm bones stay out of the clips: the physics noodle arms do the arm work.
-const ARM_BONES := ["LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand", "RightShoulder", "RightArm", "RightForeArm", "RightHand"]
+## Both rig namings: Mixamo-style (v0.1 models) and Tripo's (v0.2 models).
+const ARM_BONES := ["LeftShoulder", "LeftArm", "LeftForeArm", "LeftHand", "RightShoulder", "RightArm", "RightForeArm", "RightHand",
+	"L_Upperarm", "L_UpperarmTwist01", "L_UpperarmTwist02", "L_Forearm", "L_ForearmTwist01", "L_ForearmTwist02", "L_Hand",
+	"R_Upperarm", "R_UpperarmTwist01", "R_UpperarmTwist02", "R_Forearm", "R_ForearmTwist01", "R_ForearmTwist02", "R_Hand"]
+const UPPER_ARM := {"Left": ["LeftArm", "L_Upperarm"], "Right": ["RightArm", "R_Upperarm"]}
 
 var mover: Mover
 
@@ -140,7 +144,7 @@ func _setup_animation(model: Node) -> void:
 	var skeletons := model.find_children("*", "Skeleton3D", true, false)
 	if not skeletons.is_empty():
 		_skeleton = skeletons[0]
-		_arm_bones = [_skeleton.find_bone("LeftArm"), _skeleton.find_bone("RightArm")]
+		_arm_bones = [_find_bone(UPPER_ARM.Left), _find_bone(UPPER_ARM.Right)]
 	for anim_name in _anim.get_animation_list():
 		if anim_name.to_lower().contains("walk"):
 			_walk_clip = anim_name
@@ -218,6 +222,14 @@ func _build_stars() -> void:
 ## The models hold their hands behind their backs, so the hands are partly skinned to the spine
 ## and would stay visible when the arm bones fold away. Re-skin every vertex with real arm weight
 ## fully to its upper-arm bone so the whole arm, hands included, folds into the shoulder.
+func _find_bone(names: Array) -> int:
+	for n: String in names:
+		var b := _skeleton.find_bone(n)
+		if b >= 0:
+			return b
+	return -1
+
+
 func _fold_arm_vertices(model: Node) -> void:
 	for n in model.find_children("*", "MeshInstance3D", true, false):
 		var mi := n as MeshInstance3D
@@ -230,14 +242,14 @@ func _fold_arm_vertices(model: Node) -> void:
 			if bone_name == "" and _skeleton:
 				bone_name = _skeleton.get_bone_name(mi.skin.get_bind_bone(b))
 			for side in ["Left", "Right"]:
-				if bone_name == side + "Arm":
+				if bone_name in UPPER_ARM[side]:
 					upper[side] = b
 		for b in mi.skin.get_bind_count():
 			var bone_name := String(mi.skin.get_bind_name(b))
 			if bone_name == "" and _skeleton:
 				bone_name = _skeleton.get_bone_name(mi.skin.get_bind_bone(b))
 			if bone_name in ARM_BONES:
-				side_of_bind[b] = upper["Left" if bone_name.begins_with("Left") else "Right"]
+				side_of_bind[b] = upper["Left" if bone_name.begins_with("L") else "Right"]
 		if side_of_bind.is_empty():
 			continue
 		var src := mi.mesh as ArrayMesh

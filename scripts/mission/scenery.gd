@@ -30,6 +30,11 @@ static func build(root: Node3D, m: Dictionary, mn: Vector2, mx: Vector2, door_x:
 	_street(root, rng, street_z, float(truck.center_x), float(truck.length), rear, winter)
 	_neighbours(root, rng, yard_min, yard_max, street_z, winter)
 	_clouds(root, rng, (mn + mx) * 0.5)
+	_mailbox(root, Vector3(door_x + 2.4, 0, rear - 2.2))
+	var traffic := StreetTraffic.new()
+	traffic.name = "Traffic"
+	root.add_child(traffic)
+	traffic.setup(street_z, truck, rng.randi())
 
 
 ## Grass gets soft noise so it does not read as a flat green plane.
@@ -168,14 +173,20 @@ static func _street(root: Node3D, rng: RandomNumberGenerator, z: float, truck_x:
 	for x in [-14.0, 0.0, 14.0]:
 		if absf(x - truck_x) < 3.5:
 			x += 5.0
-		_solid(root, Vector3(x, 1.6, walk_z - 0.8), Vector3(0.12, 3.2, 0.12), Color("4a4f5a"))
+		var pole := _solid(root, Vector3(x, 1.6, walk_z - 0.8), Vector3(0.12, 3.2, 0.12), Color("4a4f5a"))
+		var model := PropModels.standing("street_lamp", Vector3(0.9, 3.4, 0.9))
+		if model:
+			pole.get_child(1).visible = false
+			model.position.y -= 1.6
+			pole.add_child(model)
+			continue
 		_visual(root, Vector3(x, 3.25, walk_z - 0.55), Vector3(0.12, 0.08, 0.6), Color("4a4f5a"))
 		var lamp := _sphere(root, Vector3(x, 3.15, walk_z - 0.3), 0.16, Color("fff3b0"))
 		(lamp.mesh.material as StandardMaterial3D).emission_enabled = true
 		(lamp.mesh.material as StandardMaterial3D).emission = Color("fff3b0")
 	# Parked cars up and down the street (not where the truck is).
 	for x in [truck_x - 9.0, truck_x + 9.5, truck_x - 17.0]:
-		_car(root, Vector3(x, 0, z + rng.randf_range(-0.3, 0.3)), CAR_COLORS[rng.randi() % CAR_COLORS.size()], rng.randf() < 0.5)
+		_car(root, Vector3(x, 0, z - 0.5 + rng.randf_range(-0.2, 0.2)), CAR_COLORS[rng.randi() % CAR_COLORS.size()], rng.randf() < 0.5)
 
 
 static func _neighbours(root: Node3D, rng: RandomNumberGenerator, ya: Vector2, yb: Vector2, street_z: float, winter: bool) -> void:
@@ -229,6 +240,14 @@ static func _tree(root: Node3D, p: Vector3, rng: RandomNumberGenerator, winter: 
 	trunk.add_child(mi)
 	trunk.position = p + Vector3(0, h * 0.5, 0)
 	root.add_child(trunk)
+	if not winter:
+		var model := PropModels.standing("tree", Vector3.ONE * (h + 1.6))
+		if model:
+			mi.visible = false
+			model.position.y -= h * 0.5
+			model.rotation.y = rng.randf() * TAU
+			trunk.add_child(model)
+			return
 	var leaf: Color = LEAF[rng.randi() % LEAF.size()] if not winter else Color("f2f7fa")
 	for k in 3:
 		var r := rng.randf_range(0.8, 1.2)
@@ -251,6 +270,15 @@ static func _car(root: Node3D, p: Vector3, color: Color, facing_left: bool) -> v
 	var yaw := PI if facing_left else 0.0
 	var body := _solid(root, p + Vector3(0, 0.6, 0), Vector3(3.6, 0.7, 1.7), color)
 	body.rotation.y = yaw
+	var size := Data.vec3(Data.game.traffic.car_size)
+	var model := PropModels.standing("car", Vector3(size.x, size.y, size.z) * 1.1)
+	if model:
+		(body.get_child(0).shape as BoxShape3D).size = Vector3(size.z, size.y * 0.8, size.x) * 1.05
+		body.get_child(1).visible = false
+		model.rotation.y = PI * 0.5   # front along +X like the box car
+		model.position.y -= 0.6
+		body.add_child(model)
+		return
 	var cabin := MeshInstance3D.new()
 	var cbm := BoxMesh.new()
 	cbm.size = Vector3(1.9, 0.6, 1.5)
@@ -334,3 +362,11 @@ static func _mat(c: Color) -> StandardMaterial3D:
 	m.roughness = 0.9
 	m.metallic_specular = 0.15
 	return m
+
+
+static func _mailbox(root: Node3D, p: Vector3) -> void:
+	var model := PropModels.standing("mailbox", Vector3(0.5, 1.2, 0.5))
+	if model:
+		model.position += p
+		model.rotation.y = PI   # face the street
+		root.add_child(model)

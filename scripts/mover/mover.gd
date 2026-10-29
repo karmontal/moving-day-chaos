@@ -8,6 +8,8 @@ signal grabbed(item: Grabbable)
 signal jumped
 
 const LAYER_MOVERS := 3
+## Every mover joins this group (street traffic brakes for them).
+const GROUP := "movers"
 const ARM_RADIUS := 0.072
 const HAND_RESET_DISTANCE := 2.2
 
@@ -68,6 +70,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	add_to_group(GROUP)
 	_build_visuals()
 	for side in [-1, 1]:
 		var h := Hand.new()

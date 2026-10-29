@@ -84,4 +84,8 @@ def voice(f0_start, f0_end, dur, formants, decay=4.0):
 write("hup", voice(260, 420, 0.18, [(700, 1.0), (1200, 0.6)], 6))       # "hup!"
 write("oof", voice(300, 150, 0.32, [(450, 1.0), (850, 0.5)], 3))        # "oof"
 write("boing", tone([(160, 1.0), (320, 0.3)], 0.35, 7, sweep=2.5))       # rubbery landing
+write("honk", concat(                                                      # toy car horn: beep-beep
+    mix(tone([(415, 1.0), (830, 0.35)], 0.16, 4, attack=0.01), tone([(523, 0.8)], 0.16, 4, attack=0.01)),
+    [0.0] * int(RATE * 0.06),
+    mix(tone([(415, 1.0), (830, 0.35)], 0.26, 3, attack=0.01), tone([(523, 0.8)], 0.26, 3, attack=0.01))))
 print("done")
