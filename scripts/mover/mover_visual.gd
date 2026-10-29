@@ -157,7 +157,25 @@ func _setup_animation(model: Node) -> void:
 			var bone := path.get_slice(":", 1)
 			if bone in ARM_BONES:
 				a.remove_track(t)
+			elif a.track_get_type(t) == Animation.TYPE_POSITION_3D:
+				_remove_root_motion(a, t)
 	_process_anim(0.0)
+
+
+## Walk clips can carry the hips forward over the loop (root motion); the physics body does the
+## moving, so take that drift out or the model walks ahead and snaps back each loop.
+static func _remove_root_motion(a: Animation, t: int) -> void:
+	var n := a.track_get_key_count(t)
+	if n < 2:
+		return
+	var t0 := a.track_get_key_time(t, 0)
+	var span := a.track_get_key_time(t, n - 1) - t0
+	var drift: Vector3 = a.track_get_key_value(t, n - 1) - a.track_get_key_value(t, 0)
+	if span <= 0.0 or drift.length() < 0.01:
+		return
+	for k in n:
+		var f := (a.track_get_key_time(t, k) - t0) / span
+		a.track_set_key_value(t, k, a.track_get_key_value(t, k) - drift * f)
 
 
 func _build_primitives(color: Color) -> void:
