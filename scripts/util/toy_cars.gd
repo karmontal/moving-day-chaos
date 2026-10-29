@@ -27,6 +27,7 @@ const CHROME := Color("d9dde3")
 
 static var _shader: Shader = null
 static var _paints := {}
+static var _mats := {}
 
 
 ## A weighted random kind id from the config.
@@ -73,11 +74,7 @@ static func build(kind: String, size: Vector3, color: Color) -> Node3D:
 			if kind == "taxi":
 				var top: float = (model.get_meta("size") as Vector3).y
 				_box(root, Vector3(0, top + 0.08, -0.1), Vector3(0.55, 0.2, 0.3), Color("2b2d38"))
-				var sign := _box(root, Vector3(0, top + 0.08, -0.1), Vector3(0.5, 0.16, 0.32), Color("fff6c8"))
-				var mat := (sign.mesh as BoxMesh).material as StandardMaterial3D
-				mat.emission_enabled = true
-				mat.emission = Color("fff0a0")
-				mat.emission_energy_multiplier = 0.4
+				_box(root, Vector3(0, top + 0.08, -0.1), Vector3(0.5, 0.16, 0.32), Color("fff6c8"), Color("fff0a0") * 0.4)
 	return root
 
 
@@ -146,12 +143,8 @@ static func _trim(root: Node3D, s: Vector3, base: float, wheel_r: float) -> void
 	for end: float in [-1.0, 1.0]:
 		_box(root, Vector3(0, base + 0.08, end * (s.z * 0.5 - 0.02)), Vector3(s.x + 0.08, 0.18, 0.16), DARK)
 		for side: float in [-1.0, 1.0]:
-			var light := _box(root, Vector3(side * (s.x * 0.5 - 0.25), base + 0.32, end * (s.z * 0.5 - 0.03)), Vector3(0.24, 0.16, 0.04),
-				Color("fff6c8") if end > 0 else Color("ff4d4d"))
-			var mat := (light.mesh as BoxMesh).material as StandardMaterial3D
-			mat.emission_enabled = true
-			mat.emission = mat.albedo_color
-			mat.emission_energy_multiplier = 0.5
+			var lit := Color("fff6c8") if end > 0 else Color("ff4d4d")
+			_box(root, Vector3(side * (s.x * 0.5 - 0.25), base + 0.32, end * (s.z * 0.5 - 0.03)), Vector3(0.24, 0.16, 0.04), lit, lit * 0.5)
 
 
 static func _wheel(root: Node3D, pos: Vector3, r: float) -> void:
@@ -170,15 +163,22 @@ static func _wheel(root: Node3D, pos: Vector3, r: float) -> void:
 		root.add_child(mi)
 
 
-static func _box(root: Node3D, pos: Vector3, size: Vector3, color: Color) -> MeshInstance3D:
+## `glow` (black = none) makes it a lamp. Materials are shared per colour so parked cars batch.
+static func _box(root: Node3D, pos: Vector3, size: Vector3, color: Color, glow := Color.BLACK) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
 	var bm := BoxMesh.new()
 	bm.size = size
-	var m := StandardMaterial3D.new()
-	m.albedo_color = color
-	m.roughness = 0.5
-	m.metallic_specular = 0.4
-	bm.material = m
+	var key := color.to_html() + glow.to_html()
+	if not _mats.has(key):
+		var m := StandardMaterial3D.new()
+		m.albedo_color = color
+		m.roughness = 0.5
+		m.metallic_specular = 0.4
+		if glow != Color.BLACK:
+			m.emission_enabled = true
+			m.emission = glow
+		_mats[key] = m
+	bm.material = _mats[key]
 	mi.mesh = bm
 	mi.position = pos
 	root.add_child(mi)

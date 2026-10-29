@@ -14,6 +14,7 @@ func _ready() -> void:
 	seed(1234)
 	_test_audio_buses()
 	_test_data()
+	_test_traffic_grid()
 	await _test_shop()
 	_test_unlocks()
 	await _test_touch_controls()
@@ -36,6 +37,46 @@ func check(cond: bool, label: String) -> void:
 
 func eq(actual: Variant, expected: Variant, label: String) -> void:
 	check(actual == expected, "%s (expected %s, got %s)" % [label, expected, actual])
+
+
+## Cars drive the street grid for a simulated minute: they stay on the roads, keep to their lane
+## clear of each other and turn at crossings.
+func _test_traffic_grid() -> void:
+	var net := {"roads_x": [[-30.0, 6.4], [0.0, 13.0], [30.0, 6.4]], "roads_z": [[-30.0, 8.0], [30.0, 8.0]]}
+	var traffic := StreetTraffic.new()
+	add_child(traffic)
+	traffic.set_physics_process(false)
+	traffic.setup(net, 7)
+	check(traffic._cars.size() >= 6, "traffic spawns cars on the grid (%d)" % traffic._cars.size())
+	var off_road := 0
+	var turned := 0
+	var crashes := 0
+	var start_heading := {}
+	for car in traffic._cars:
+		start_heading[car] = car.heading
+	for step in 1200:
+		for car in traffic._cars:
+			traffic._drive(car, 0.05)
+			var on_x := false
+			for r: Array in net.roads_x:
+				on_x = on_x or absf(car.pos.y - float(r[0])) < float(r[1]) * 0.5
+			var on_z := false
+			for r: Array in net.roads_z:
+				on_z = on_z or absf(car.pos.x - float(r[0])) < float(r[1]) * 0.5
+			if not (on_x or on_z):
+				off_road += 1
+		for i in traffic._cars.size():
+			for j in range(i + 1, traffic._cars.size()):
+				if traffic._cars[i].pos.distance_to(traffic._cars[j].pos) < 1.0:
+					crashes += 1
+	for car in traffic._cars:
+		if absf((start_heading[car] as Vector2).dot(car.heading)) < 0.5:
+			turned += 1
+	eq(off_road, 0, "cars stay on the roads")
+	eq(crashes, 0, "cars never drive through each other")
+	check(turned > 0, "cars turn at crossings (%d turned)" % turned)
+	check(traffic._cars.all(func(c: StreetTraffic.Car) -> bool: return c.speed > 0.5), "no car is stuck")
+	traffic.queue_free()
 
 
 func _test_audio_buses() -> void:
@@ -416,17 +457,17 @@ func _test_mission_delivery() -> void:
 	var low := space.intersect_ray(PhysicsRayQueryParameters3D.create(Vector3(rx, 3, rear - float(tr_data.ramp_length) + 0.15), Vector3(rx, -1, rear - float(tr_data.ramp_length) + 0.15), 1))
 	check(not high.is_empty() and absf(high.position.y - float(tr_data.bed_height)) < 0.15, "ramp top meets the truck bed (y=%s)" % (high.get("position", Vector3.ZERO).y))
 	check(not low.is_empty() and low.position.y < 0.15, "ramp foot rests on the driveway (y=%s)" % (low.get("position", Vector3.ZERO).y))
-	# Street traffic flows past the parked truck instead of queueing behind it.
+	# Traffic drives around the street grid; the truck on the driveway never blocks it.
 	var traffic: StreetTraffic = mission.find_child("Traffic", true, false)
 	check(traffic != null and traffic.get_child_count() > 0, "street has moving cars")
 	if traffic:
 		var start := {}
 		for car in traffic.get_children():
-			start[car] = (car as Node3D).position.x
+			start[car] = (car as Node3D).position
 		await _wait(1.0)
 		var moved := 0
 		for car: Node3D in start:
-			if is_instance_valid(car) and absf(car.position.x - float(start[car])) > 2.0:
+			if is_instance_valid(car) and car.position.distance_to(start[car]) > 2.0:
 				moved += 1
 		check(moved > 0, "cars keep driving (%d of %d moved)" % [moved, start.size()])
 	var box: Grabbable = mission.items.filter(func(g: Grabbable) -> bool: return g.item_id == "box_small")[0]

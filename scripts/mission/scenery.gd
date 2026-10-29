@@ -12,7 +12,6 @@ static var _grass_tex: Texture2D = null
 static var _floor_tex: Texture2D = null
 
 
-const STREET_LENGTH := 140.0
 const LANE := 3.2          # one traffic lane
 const PARKING := 2.3       # parking strip along each curb
 const WALK := 2.4          # sidewalk width
@@ -41,20 +40,24 @@ static func build(root: Node3D, m: Dictionary, mn: Vector2, mx: Vector2, door_x:
 	var truck_x: float = truck.center_x
 	var yard_min := mn - Vector2(3.0, 3.0)
 	var yard_max := Vector2(mx.x + 3.0, float(lay.walk_z) - WALK * 0.5 - 0.3)
-	var cross_x := roundf(yard_max.x + 30.0)
 
 	_porch(root, mx, door_x)
 	_driveway(root, truck, lay)
 	_fence(root, yard_min, yard_max, truck_x, float(truck.width) + 2.2, winter)
 	_garden(root, rng, mn, mx, yard_min, yard_max, door_x, winter)
-	_street(root, rng, lay, truck_x, cross_x, winter)
-	_neighbours(root, rng, yard_min, yard_max, lay, cross_x, winter)
+	# The neighbourhood never moves or fades, so it is built under its own node and merged into a
+	# few big meshes (thousands of pieces would be too many draw calls on phones).
+	var town := Node3D.new()
+	town.name = "Town"
+	root.add_child(town)
+	var net := Town.build(town, rng, lay, yard_min, yard_max, truck_x, winter)
+	MeshBatcher.merge(town)
 	_clouds(root, rng, (mn + mx) * 0.5)
 	_mailbox(root, Vector3(truck_x + float(truck.width) * 0.5 + 1.7, 0, yard_max.y - 0.6))
 	var traffic := StreetTraffic.new()
 	traffic.name = "Traffic"
 	root.add_child(traffic)
-	traffic.setup(lay, STREET_LENGTH, rng.randi())
+	traffic.setup(net, rng.randi())
 
 
 ## Grass gets soft noise so it does not read as a flat green plane.
@@ -187,69 +190,6 @@ static func _driveway(root: Node3D, truck: Dictionary, lay: Dictionary) -> void:
 		_visual(root, Vector3(float(truck.center_x) + s * (w * 0.5 + 0.06), 0.03, (z0 + z1) * 0.5), Vector3(0.12, 0.06, z1 - z0), Color("bdb8ae"))
 
 
-## Two-lane street with parking strips, sidewalks, a cross street, lamps and parked cars.
-static func _street(root: Node3D, rng: RandomNumberGenerator, lay: Dictionary, truck_x: float, cross_x: float, winter: bool) -> void:
-	var half := STREET_LENGTH * 0.5
-	var road: float = lay.road
-	var sz: float = lay.street_z
-	var asphalt := EnvMaterials.shared(Color("eef2f6") if winter else Color.WHITE, "asphalt", 4.0)
-	var pavers := EnvMaterials.shared(Color("fffaf2") if not winter else Color("f4f8fb"), "pavers", 2.4)
-	var line := Color("f2e6a0") if not winter else WHITE
-	_visual(root, Vector3(0, 0.01, sz), Vector3(STREET_LENGTH, 0.02, road), Color.WHITE, asphalt)
-	# The cross street, both sides of the intersection.
-	var cross_len := 60.0
-	_visual(root, Vector3(cross_x, 0.01, float(lay.curb_z) - cross_len * 0.5), Vector3(road, 0.02, cross_len), Color.WHITE, asphalt)
-	_visual(root, Vector3(cross_x, 0.01, float(lay.far_curb_z) + cross_len * 0.5), Vector3(road, 0.02, cross_len), Color.WHITE, asphalt)
-	var gap := Vector2(cross_x - road * 0.5, cross_x + road * 0.5)
-	# Sidewalks with curbs, cut where the cross street meets them.
-	for side: float in [-1.0, 1.0]:
-		var wz: float = lay.walk_z if side < 0 else lay.far_walk_z
-		var curb_z := wz - side * (WALK * 0.5 - 0.08)
-		for seg: Vector2 in [Vector2(-half, gap.x), Vector2(gap.y, half)]:
-			_visual(root, Vector3((seg.x + seg.y) * 0.5, 0.03, wz), Vector3(seg.y - seg.x, 0.06, WALK), Color.WHITE, pavers)
-			_visual(root, Vector3((seg.x + seg.y) * 0.5, 0.06, curb_z), Vector3(seg.y - seg.x, 0.12, 0.16), Color("bdb8ae"))
-		# Sidewalks along the cross street.
-		for sx: float in [-1.0, 1.0]:
-			var z0: float = lay.curb_z - cross_len if side < 0 else lay.far_curb_z
-			var z1: float = lay.curb_z if side < 0 else lay.far_curb_z + cross_len
-			_visual(root, Vector3(cross_x + sx * (road * 0.5 + WALK * 0.5), 0.03, (z0 + z1) * 0.5), Vector3(WALK, 0.06, z1 - z0), Color.WHITE, pavers)
-		# Zebra crossing over the cross street.
-		for i in 7:
-			_visual(root, Vector3(gap.x + 0.7 + i * (road - 1.4) / 6.0, 0.022, wz), Vector3(0.55, 0.01, WALK - 0.2), WHITE)
-	# Markings: dashed centre line and parking edge lines, broken by the intersection.
-	var x := -half + 1.0
-	while x < half:
-		if x < gap.x - 1.0 or x > gap.y + 1.0:
-			_visual(root, Vector3(x, 0.022, sz), Vector3(1.8, 0.01, 0.15), line)
-		x += 3.2
-	for ez: float in [float(lay.curb_z) + PARKING, float(lay.far_curb_z) - PARKING]:
-		for seg: Vector2 in [Vector2(-half, gap.x - 1.0), Vector2(gap.y + 1.0, half)]:
-			_visual(root, Vector3((seg.x + seg.y) * 0.5, 0.022, ez), Vector3(seg.y - seg.x, 0.01, 0.1), WHITE)
-	# Street lamps on both sidewalks (models are heavy, so only near the action).
-	for i in range(-3, 4):
-		for side: float in [-1.0, 1.0]:
-			var lx := truck_x + i * 13.0 + (0.0 if side < 0 else 6.5)
-			if (side < 0 and absf(lx - truck_x) < 3.5) or absf(lx - cross_x) < road * 0.5 + 2.0:
-				continue
-			var wz: float = lay.walk_z if side < 0 else lay.far_walk_z
-			_lamp(root, Vector3(lx, 0, wz - side * 0.75), side)
-	# Parked cars along both curbs, never across the driveway or the intersection.
-	var cfg: Dictionary = Data.game.traffic
-	var taken: Array[Vector2] = []   # (x, side)
-	var tries := 0
-	while taken.size() < int(cfg.parked_cars) and tries < 200:
-		tries += 1
-		var side := -1.0 if rng.randf() < 0.5 else 1.0
-		var px := rng.randf_range(-half + 8.0, half - 8.0)
-		if absf(px - cross_x) < road * 0.5 + 4.0 or (side < 0 and absf(px - truck_x) < 6.0):
-			continue
-		if taken.any(func(t: Vector2) -> bool: return t.y == side and absf(t.x - px) < 6.5):
-			continue
-		taken.append(Vector2(px, side))
-		var pz: float = (float(lay.curb_z) + PARKING * 0.5) if side < 0 else (float(lay.far_curb_z) - PARKING * 0.5)
-		_parked_car(root, rng, Vector3(px, 0, pz), side < 0)
-
-
 static func _lamp(root: Node3D, p: Vector3, side: float) -> void:
 	var pole := _solid(root, p + Vector3(0, 1.6, 0), Vector3(0.12, 3.2, 0.12), Color("4a4f5a"))
 	var model := PropModels.standing("street_lamp", Vector3(0.9, 3.4, 0.9))
@@ -260,8 +200,10 @@ static func _lamp(root: Node3D, p: Vector3, side: float) -> void:
 		pole.add_child(model)
 		return
 	var lamp := _sphere(root, p + Vector3(0, 3.15, side * 0.3), 0.16, Color("fff3b0"))
-	(lamp.mesh.material as StandardMaterial3D).emission_enabled = true
-	(lamp.mesh.material as StandardMaterial3D).emission = Color("fff3b0")
+	var glow := _mat(Color("fff3b0"))
+	glow.emission_enabled = true
+	glow.emission = Color("fff3b0")
+	lamp.mesh.material = glow
 
 
 static func _parked_car(root: Node3D, rng: RandomNumberGenerator, p: Vector3, facing_left: bool) -> void:
@@ -283,32 +225,9 @@ static func _parked_car(root: Node3D, rng: RandomNumberGenerator, p: Vector3, fa
 	root.add_child(body)
 
 
-## Rows of houses along both sides of the street (and past the cross street), each one built
-## from a few shapes with its own walls, roof, door and windows.
-static func _neighbours(root: Node3D, rng: RandomNumberGenerator, ya: Vector2, yb: Vector2, lay: Dictionary, cross_x: float, winter: bool) -> void:
-	var limit := STREET_LENGTH * 0.5 - 6.0
-	var near_front: float = float(lay.walk_z) - WALK * 0.5
-	var far_front: float = float(lay.far_walk_z) + WALK * 0.5
-	var spots: Array = []
-	for k in 5:
-		spots.append([ya.x - 8.0 - k * 13.0, 1.0])
-		spots.append([yb.x + 8.0 + k * 13.0, 1.0])
-	var fx := -limit
-	while fx <= limit:
-		spots.append([fx + rng.randf_range(-1.0, 1.0), -1.0])
-		fx += 13.0
-	for spot: Array in spots:
-		var x: float = spot[0]
-		var facing: float = spot[1]
-		if absf(x) > limit or absf(x - cross_x) < float(lay.road) * 0.5 + 6.5:
-			continue
-		var setback := rng.randf_range(3.5, 5.0)
-		var front := near_front - setback if facing > 0 else far_front + setback
-		_house(root, rng, x, front, facing, setback, winter)
-
-
 ## One neighbour house. `front` is the Z of its front wall, `facing` +1 if it looks toward +Z.
-static func _house(root: Node3D, rng: RandomNumberGenerator, x: float, front: float, facing: float, setback: float, winter: bool) -> void:
+## `face_yaw` (optional) turns the house to face any way; then (x, front) is the middle of its front wall.
+static func _house(root: Node3D, rng: RandomNumberGenerator, x: float, front: float, facing: float, setback: float, winter: bool, face_yaw := NAN) -> void:
 	var kind := rng.randi() % 4   # 0 bungalow, 1 two storeys, 2 bungalow + garage, 3 gable-front cottage
 	var w := rng.randf_range(6.5, 8.0)
 	var d := rng.randf_range(5.5, 6.8)
@@ -319,8 +238,11 @@ static func _house(root: Node3D, rng: RandomNumberGenerator, x: float, front: fl
 	var roof_col: Color = ROOF_COLORS[rng.randi() % ROOF_COLORS.size()] if not winter else Color("f4f8fb")
 	var accent: Color = DOOR_COLORS[rng.randi() % DOOR_COLORS.size()]
 	var house := Node3D.new()
-	house.position = Vector3(x, 0, front - facing * d * 0.5)
-	house.rotation.y = 0.0 if facing > 0 else PI
+	var yaw := 0.0 if facing > 0 else PI
+	if not is_nan(face_yaw):
+		yaw = face_yaw
+	house.rotation.y = yaw
+	house.position = Vector3(x, 0, front) - Vector3(sin(yaw), 0, cos(yaw)) * d * 0.5
 	root.add_child(house)
 	_solid(house, Vector3(0, h * 0.5, 0), Vector3(w, h, d), wall_col, wall_mat)
 	_visual(house, Vector3(0, 0.18, 0), Vector3(w + 0.12, 0.36, d + 0.12), Color("b8b2a8"))   # foundation
@@ -416,8 +338,9 @@ static func _clouds(root: Node3D, rng: RandomNumberGenerator, center: Vector2) -
 		var base := Vector3(center.x + rng.randf_range(-35, 35), rng.randf_range(16, 22), center.y + rng.randf_range(-40, 10))
 		for k in 4:
 			var mi := _sphere(root, base + Vector3(k * 1.6 - 2.4, rng.randf_range(-0.4, 0.4), rng.randf_range(-0.6, 0.6)), rng.randf_range(1.2, 2.0), Color(1, 1, 1))
-			var mat := mi.mesh.material as StandardMaterial3D
+			var mat := _mat(Color(1, 1, 1))
 			mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			mi.mesh.material = mat
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 
 
@@ -437,7 +360,7 @@ static func _tree(root: Node3D, p: Vector3, rng: RandomNumberGenerator, winter: 
 	cm.top_radius = 0.14
 	cm.bottom_radius = 0.22
 	cm.height = h
-	cm.material = _mat(Color("8a5a36"))
+	cm.material = EnvMaterials.shared(Color("8a5a36"))
 	mi.mesh = cm
 	trunk.add_child(mi)
 	trunk.position = p + Vector3(0, h * 0.5, 0)
@@ -506,7 +429,7 @@ static func _sphere(root: Node3D, pos: Vector3, r: float, color: Color) -> MeshI
 	sm.height = r * 2.0
 	sm.radial_segments = 12
 	sm.rings = 6
-	sm.material = _mat(color)
+	sm.material = EnvMaterials.shared(color)
 	mi.mesh = sm
 	mi.position = pos
 	root.add_child(mi)

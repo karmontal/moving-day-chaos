@@ -18,3 +18,8 @@
 - Street layout: the truck parks on a driveway and `Scenery.layout(truck)` puts the street past its nose
   (traffic never meets the truck; a test checks every mission). Environment textures come from
   `python3 tools/gen_textures.py` (near-white, tinted by `EnvMaterials`); fading walls need their own material.
+- The neighbourhood is `Town` (closed street grid, hedge border); `StreetTraffic` drives every street and turns at
+  crossings. Town is merged by `MeshBatcher` after it is built, so it must stay static and use shared materials
+  (`EnvMaterials.shared`); anything that moves, fades or changes material goes outside the `Town` node.
+  A car is an AnimatableBody3D with sync_to_physics: set its whole `transform` once per frame (position then
+  rotation undoes the position).

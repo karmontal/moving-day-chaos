@@ -78,6 +78,27 @@ func _ready() -> void:
 					_mission.rig.rotation = Vector3(-0.3, -2.3 if which == "truck" else PI - 0.6, 0)
 					_mission.rig.spring.spring_length = 9.0
 					_mission.rig.spring.collision_mask = 0
+				"town":
+					# Bird's-eye view of the whole neighbourhood.
+					_mission.rig.controls_mover = false
+					_mission.rig.set_process(false)
+					_mission.hud.visible = false
+					var tl := Scenery.layout(_mission.data.truck)
+					_mission.rig.global_position = Vector3(0, 0, float(tl.street_z) - 8.0)
+					_mission.rig.rotation = Vector3(-0.95, 0.35, 0)
+					_mission.rig.spring.spring_length = 95.0
+					_mission.rig.spring.collision_mask = 0
+					_mission.rig.camera.far = 400.0
+				"yards":
+					# Close look at the front yards across the main street.
+					_mission.rig.controls_mover = false
+					_mission.rig.set_process(false)
+					_mission.hud.visible = false
+					var yl := Scenery.layout(_mission.data.truck)
+					_mission.rig.global_position = Vector3(float(_mission.data.truck.center_x) + 12.0, 1.0, float(yl.far_walk_z) - 1.0)
+					_mission.rig.rotation = Vector3(-0.32, PI + 0.6, 0)
+					_mission.rig.spring.spring_length = 12.0
+					_mission.rig.spring.collision_mask = 0
 				"street", "houses":
 					# Wide shot of the street from above the truck's nose, or a low one along the houses.
 					_mission.rig.controls_mover = false
