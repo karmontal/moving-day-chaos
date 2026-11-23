@@ -1,6 +1,6 @@
 # النشر على Google Play
 
-الباكج: `com.karmontal.movingdaychaos` · المحرك يصدّر AAB من الـ preset **"Android Play"** (Gradle build،
+الباكج: `com.hudatalla.movingdaychaos` · المحرك يصدّر AAB من الـ preset **"Android Play"** (Gradle build،
 `targetSdk 36` اللي يطلبه Play من 31 أغسطس 2026، `minSdk 24`، arm64 + armv7).
 البناء: GitHub Actions ← **Google Play build** (`.github/workflows/play.yml`). نسخة itch.io (APK) ما تغيّرت.
 
