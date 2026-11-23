@@ -38,6 +38,7 @@ friends' "help".
 
 **📱 Android / 💻 Windows / 🍎 Mac:** كل push على `main` يبني النسخ تلقائياً (GitHub Actions ← *Android build*)
 ويرفعها على itch.io، والـ APK كمان في [Releases → android-latest](https://github.com/karmontal/moving-day-chaos/releases/tag/android-latest).
+**Google Play:** AAB موقّع من *Google Play build* — الخطوات كاملة في [`docs/GOOGLE_PLAY.md`](docs/GOOGLE_PLAY.md).
 نسخة الآيفون تنبني يدوياً من workflow *iOS*.
 افتح الرابط من الجوال، نزّل `moving-day-chaos.apk` وثبّته (اسمح بالتثبيت من مصادر غير معروفة).
 التحكم باللمس: اليسار للحركة، اسحب في اليمين لتنظر وترفع/تنزل الأيدي، وأزرار **امسك / يسرى / يمنى** تشتغل بالضغط مرة للمسك ومرة للإفلات.
