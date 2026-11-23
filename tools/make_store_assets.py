@@ -73,3 +73,8 @@ save(bg, "steam/page_background_1438x810.png")
 save(stamp(cover(wide, 630, 500, 0.45, 0.4), 0.7, 0.5, 0.03), "itch/cover_630x500.png")
 save(stamp(cover(pano, 960, 300, 0.5, 0.0), 0.3, 0.5, 0.03), "itch/banner_960x300.png")
 save(ImageEnhance.Brightness(cover(wide, 1920, 1080).filter(ImageFilter.GaussianBlur(4))).enhance(0.9), "itch/background_1920x1080.png")
+
+# --- Google Play (phone screenshots: use marketing/store/screenshots/ as they are, 1920x1080 is accepted).
+save(stamp(cover(wide, 1024, 500, 0.5, 0.45), 0.5, 0.5, 0.03), "google_play/feature_graphic_1024x500.png")
+icon = Image.open("assets/art/icon_1024.png").convert("RGBA").resize((512, 512), Image.LANCZOS)
+save(icon, "google_play/icon_512.png")

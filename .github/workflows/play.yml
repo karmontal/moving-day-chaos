@@ -1,0 +1,156 @@
+name: Google Play build
+
+# Builds the Android App Bundle (.aab) that Google Play needs, using the "Android Play" export preset
+# (Gradle build, target SDK 36, arm64 + armv7).
+#
+# Signing: set these repository secrets (Settings > Secrets and variables > Actions):
+#   ANDROID_UPLOAD_KEYSTORE_BASE64    base64 of the private upload keystore (.jks / .keystore)
+#   ANDROID_UPLOAD_KEYSTORE_PASSWORD  its password (store and key password must be the same)
+#   ANDROID_UPLOAD_KEY_ALIAS          the key alias
+# Without them the bundle is signed with tools/android/debug.keystore: fine to check that the build works,
+# but Google Play rejects it.
+#
+# Upload: when PLAY_SERVICE_ACCOUNT_JSON is set and the run is started by hand, the bundle is sent to the
+# chosen Play track as a draft (you still press "release" in Play Console). The very first bundle of a new
+# app must be uploaded by hand in Play Console; this step is for the builds after it.
+on:
+  workflow_dispatch:
+    inputs:
+      track:
+        description: "Play track to upload to (needs PLAY_SERVICE_ACCOUNT_JSON)"
+        type: choice
+        default: none
+        options: [none, internal, alpha, beta, production]
+  push:
+    tags: ["v*"]
+  pull_request:
+    paths:
+      - ".github/workflows/play.yml"
+      - "export_presets.cfg"
+
+jobs:
+  aab:
+    runs-on: ubuntu-latest
+    env:
+      GODOT_VERSION: 4.7-stable
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot
+        run: |
+          curl -sSL -o godot.zip "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip"
+          unzip -q godot.zip
+          mv "Godot_v${GODOT_VERSION}_linux.x86_64" godot
+
+      - name: Cache Android export templates
+        id: templates
+        uses: actions/cache@v4
+        with:
+          path: ~/.local/share/godot/export_templates
+          key: godot-android-gradle-templates-${{ env.GODOT_VERSION }}
+
+      - name: Download Android export templates (with the Gradle source)
+        if: steps.templates.outputs.cache-hit != 'true'
+        run: |
+          dir="$HOME/.local/share/godot/export_templates/${GODOT_VERSION/-/.}"
+          mkdir -p "$dir"
+          curl -sSL -o templates.tpz "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz"
+          unzip -oq -j templates.tpz "templates/android_*" "templates/version.txt" -d "$dir"
+          ls "$dir"
+          rm templates.tpz
+
+      - name: Point Godot at the Android SDK and Java
+        run: |
+          mkdir -p "$HOME/.config/godot"
+          short=$(echo "${GODOT_VERSION%-*}")
+          for name in "editor_settings-4.tres" "editor_settings-${short}.tres"; do
+            cat > "$HOME/.config/godot/$name" <<SETTINGS
+          [gd_resource type="EditorSettings" format=3]
+
+          [resource]
+          export/android/android_sdk_path = "$ANDROID_HOME"
+          export/android/java_sdk_path = "$JAVA_HOME_17_X64"
+          SETTINGS
+          done
+
+      - name: Import and install the Android build template
+        run: |
+          ./godot --headless --path . --import
+          ./godot --headless --path . --install-android-build-template --quit || true
+          test -d android/build || { echo "::error::Android build template was not installed"; exit 1; }
+
+      - name: Choose the signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_BASE64 }}
+          KEYSTORE_PASS: ${{ secrets.ANDROID_UPLOAD_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_UPLOAD_KEY_ALIAS }}
+        run: |
+          if [ -n "$KEYSTORE_B64" ]; then
+            echo "$KEYSTORE_B64" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+            {
+              echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$RUNNER_TEMP/upload.keystore"
+              echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=$KEY_ALIAS"
+              echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=$KEYSTORE_PASS"
+              echo "PLAY_SIGNED=true"
+            } >> "$GITHUB_ENV"
+          else
+            echo "::warning::No upload keystore secrets: signing with the debug keystore. Google Play will reject this bundle."
+            {
+              echo "GODOT_ANDROID_KEYSTORE_RELEASE_PATH=$GITHUB_WORKSPACE/tools/android/debug.keystore"
+              echo "GODOT_ANDROID_KEYSTORE_RELEASE_USER=androiddebugkey"
+              echo "GODOT_ANDROID_KEYSTORE_RELEASE_PASSWORD=android"
+              echo "PLAY_SIGNED=false"
+            } >> "$GITHUB_ENV"
+          fi
+
+      - name: Export AAB
+        run: |
+          mkdir -p build
+          VERSION=$(grep '^config/version=' project.godot | cut -d'"' -f2)
+          # Play needs a higher versionCode for every upload. The offset keeps it above the itch.io APK builds.
+          CODE=$((100000 + GITHUB_RUN_NUMBER))
+          python3 - "$CODE" "$VERSION" <<'PY'
+          import re, sys
+          code, version = sys.argv[1], sys.argv[2]
+          s = open("export_presets.cfg").read()
+          head, sep, rest = s.partition('name="Android Play"')
+          rest = re.sub(r'^version/code=.*$', f'version/code={code}', rest, count=1, flags=re.M)
+          rest = re.sub(r'^version/name=.*$', f'version/name="{version}"', rest, count=1, flags=re.M)
+          open("export_presets.cfg", "w").write(head + sep + rest)
+          PY
+          ./godot --headless --path . --export-release "Android Play" build/moving-day-chaos.aab
+          test -f build/moving-day-chaos.aab
+          ls -lh build/
+          echo "VERSION_CODE=$CODE" >> "$GITHUB_ENV"
+
+      - name: Check the bundle (target SDK, version, signature)
+        run: |
+          curl -sSL -o bundletool.jar https://github.com/google/bundletool/releases/download/1.18.1/bundletool-all-1.18.1.jar
+          java -jar bundletool.jar dump manifest --bundle build/moving-day-chaos.aab > manifest.xml
+          grep -oE '(package|android:versionCode|android:versionName|android:targetSdkVersion|android:minSdkVersion)="[^"]*"' manifest.xml
+          grep -q 'android:targetSdkVersion="36"' manifest.xml || { echo "::error::targetSdkVersion is not 36"; exit 1; }
+          jarsigner -verify build/moving-day-chaos.aab | tail -1
+          {
+            echo "### Google Play bundle"
+            echo "- versionCode: $VERSION_CODE"
+            echo "- signed with upload key: $PLAY_SIGNED"
+            echo '```'
+            grep -oE '(package|android:versionName|android:targetSdkVersion|android:minSdkVersion)="[^"]*"' manifest.xml
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: moving-day-chaos-aab
+          path: build/moving-day-chaos.aab
+          retention-days: 14
+
+      - name: Upload to Google Play (draft)
+        if: github.event_name == 'workflow_dispatch' && inputs.track != 'none' && env.PLAY_SIGNED == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.karmontal.movingdaychaos
+          releaseFiles: build/moving-day-chaos.aab
+          track: ${{ inputs.track }}
+          status: draft
