@@ -73,11 +73,8 @@ jobs:
           SETTINGS
           done
 
-      - name: Import and install the Android build template
-        run: |
-          ./godot --headless --path . --import
-          ./godot --headless --path . --install-android-build-template --quit || true
-          test -d android/build || { echo "::error::Android build template was not installed"; exit 1; }
+      - name: Import
+        run: ./godot --headless --path . --import
 
       - name: Choose the signing key
         env:
@@ -118,7 +115,8 @@ jobs:
           rest = re.sub(r'^version/name=.*$', f'version/name="{version}"', rest, count=1, flags=re.M)
           open("export_presets.cfg", "w").write(head + sep + rest)
           PY
-          ./godot --headless --path . --export-release "Android Play" build/moving-day-chaos.aab
+          # --install-android-build-template only works together with an export: it unpacks the Gradle project to android/build first.
+          ./godot --headless --path . --install-android-build-template --export-release "Android Play" build/moving-day-chaos.aab
           test -f build/moving-day-chaos.aab
           ls -lh build/
           echo "VERSION_CODE=$CODE" >> "$GITHUB_ENV"
