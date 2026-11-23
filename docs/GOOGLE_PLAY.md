@@ -30,7 +30,7 @@ Actions ← Google Play build ← Run workflow (track = none) ← نزّل `movi
 ## 3. Play Console
 1. حساب مطوّر ($25 مرة وحدة) + تحقق الهوية.
 2. Create app: الاسم "Moving Day Chaos"، Game، Free (المجاني ما يرجع مدفوع بعدين).
-3. App content: سياسة الخصوصية (رابط عام لـ [`privacy_policy.md`](privacy_policy.md))، Ads = No،
+3. App content: سياسة الخصوصية: https://karmontal.github.io/moving-day-chaos/privacy/ (من `site/privacy/`، تنشرها `pages.yml`؛ أول مرة: Settings ← Pages ← Source = GitHub Actions)، Ads = No،
    Data safety (تحت)، Content rating (استبيان IARC)، Target audience (13+ أسلم)، News app = No.
 4. Store listing: النصوص تحت + الصور من `marketing/store/google_play/` و `marketing/store/screenshots/`.
 5. Testing ← Closed testing: ارفع الـ AAB يدوي أول مرة، أضف 12 مختبِر على الأقل (إيميلات Gmail)،

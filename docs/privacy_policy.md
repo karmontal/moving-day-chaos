@@ -19,7 +19,7 @@ contacts, photos, location, camera or microphone. We do not sell or share data.
 
 **Changes.** If this policy changes, the new version will be posted at this address with a new date.
 
-**Contact:** _<add the support email shown on the Google Play listing>_
+**Contact:** [GitHub issues](https://github.com/karmontal/moving-day-chaos/issues)
 
 ---
 
@@ -37,4 +37,4 @@ _آخر تحديث: 2026-11-23_
 **وش ما تسويه اللعبة:** ما فيه حسابات، ولا إعلانات، ولا مشتريات داخل اللعبة، ولا تتبع أو تحليلات، وما توصل لجهات الاتصال
 أو الصور أو الموقع أو الكاميرا أو المايك. ما نبيع ولا نشارك أي بيانات.
 
-**التواصل:** _<البريد الظاهر في صفحة Google Play>_
+**التواصل:** [GitHub issues](https://github.com/karmontal/moving-day-chaos/issues)
