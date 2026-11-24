@@ -85,6 +85,13 @@ Release. حط الـ JSON في Secret اسمه `PLAY_SERVICE_ACCOUNT_JSON`. بع
 |---|---|
 | App icon 512×512 | `marketing/store/google_play/icon_512.png` |
 | Feature graphic 1024×500 | `marketing/store/google_play/feature_graphic_1024x500.png` |
-| Phone screenshots (2–8) | `marketing/store/screenshots/*.png` (1920×1080) |
+| Phone screenshots (8) | `marketing/store/google_play/screenshots/en/` للصفحة الإنجليزية و `ar/` للعربية (1920×1080، بأزرار الجوال) |
 
-يتولدون بـ `python3 tools/make_store_assets.py`.
+الأيقونة والـ Feature graphic يتولدون بـ `python3 tools/make_store_assets.py`. اللقطات (لكل لغة `en` / `ar`):
+
+```bash
+for s in crew touch sofa street:winter_cabin truck town results levels; do
+  SHOT_TOUCH=1 xvfb-run -a -s "-screen 0 1920x1080x24" godot --path . --rendering-driver opengl3 \
+    res://tools/screenshot.tscn -- "$s" out_${s%%:*}.png ar
+done
+```
