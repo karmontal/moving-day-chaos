@@ -48,7 +48,8 @@ func _ready() -> void:
 				SettingsPanel.open(menu)
 			await _frames(20)
 		_:
-			if which == "touch":
+			# SHOT_TOUCH=1 shows the phone controls on any mission shot (used for the Google Play screenshots).
+			if which == "touch" or OS.get_environment("SHOT_TOUCH") == "1":
 				Engine.set_meta("force_touch", true)
 			_mission = load("res://scenes/mission.tscn").instantiate()
 			if which == "sofa":
